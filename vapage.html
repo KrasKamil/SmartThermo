@@ -1,0 +1,165 @@
+<!DOCTYPE HTML> 
+<html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="keywords" content="Smart Thermostat">
+      <meta name="description" content="smart page">
+              
+      <title> Your Smart Assistant</title>
+      <link rel="stylesheet" href="style.css">
+        
+    </head>
+    
+    <body onload = "initClock();" >
+
+      <div id="kontener">
+        <div id="naglowek">
+          <h1>Smart Thermostat</h1>
+        </div>
+        <div class="kolumna">
+          <button id="updateBtn" onclick = "ClearData();">update data</button>
+          <script type="text/javascript">
+            function ClearData() {
+            document.getElementById("City").innerHTML = "";
+            document.getElementById("Temp_ins").innerHTML = "";
+            document.getElementById("Hum_ins").innerHTML = "";
+            document.getElementById("Pressure").innerHTML = "";
+            document.getElementById("Temp_out").innerHTML = "";
+            document.getElementById("Wind").innerHTML = "";
+            document.getElementById("Last_update").innerHTML = "";
+            userAction();
+          }
+          </script>
+          <table id = "table">
+            <tr>
+              <td>City</td>
+              <td id="City"></td>
+          </tr>
+          <tr>
+              <td>Temp_ins</td>  
+              <td id ="Temp_ins"></td>
+          </tr>
+          <tr>
+              <td>Hum_ins</td>  
+              <td id ="Hum_ins"></td>
+          </tr>
+          <tr>
+              <td>Pressure</td>
+              <td id ="Pressure"></td>
+          </tr>
+          <tr>
+              <td>Temp_out</td>
+              <td id ="Temp_out"></td>
+          </tr>
+          <tr>
+              <td>Wind</td>
+              <td id = "Wind"></td>
+          </tr>
+          <tr>
+              <td>Last update</td>
+              <td id="Last_update"></td>
+          </tr>
+        </table>
+          <script type="text/javascript">
+            const userAction = async () => {  
+
+                const response = await fetch('http://localhost:3333/');
+                const myJson = await response.json(); //extract JSON from the http response
+                
+                document.getElementById("City").innerHTML += myJson.city+"<br>";
+                document.getElementById("Temp_ins").innerHTML += myJson.temp_ins+"<br>";
+                document.getElementById("Hum_ins").innerHTML += myJson.hum_ins+"<br>";
+                document.getElementById("Pressure").innerHTML += myJson.pressure+"<br>";
+                document.getElementById("Temp_out").innerHTML += myJson.temp_out+"<br>";
+                document.getElementById("Wind").innerHTML += myJson.wind+"<br>";
+                document.getElementById("Last_update").innerHTML += myJson.due_date+"<br>";
+                //console.log(myJson);
+            }
+        </script>
+        </div>
+
+        <div class="kolumna">
+          <p id='main'></p>
+        <!--digital clock start-->
+        <div class="datetime"> 
+          <div class="date">
+            <span id = "dayname">Day</span>,
+            <span id = "month">Month</span>
+            <span id = "daynum">00</span>,
+            <span id = "year">Year</span>
+        </div>
+        <div class="time">
+          <span id ='hour'>00</span>:
+          <span id ='minute'>00</span>:
+          <span id ='second'>00</span>
+          <span id ='period'>AM</span>
+        </div>
+        <!--digital clock end-->
+      <script type = "text/javascript">
+      function updateClock(){
+        var now = new Date();
+        var dname = now.getDay(),
+        mo = now.getMonth(),
+        dnum=now.getDate(),
+        yr = now.getFullYear(),
+        hou  = now.getHours(),
+        min = now.getMinutes(),
+        sec = now.getSeconds(),
+        pe = "AM";
+
+        if (hou == 0){
+          hou = 12;
+        }
+        if(hou>12){
+          hou-12;
+          pe='PM'
+        }
+        
+        Number.prototype.pad = function(digits){
+          for(var n = this.toString(); n,n.length<digits;n= 0+n);
+          return n;
+        }
+
+        var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        var week = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+        var ids =["dayname", "month","daynum", "year","hour","minute", "second", "period"];
+        var values = [week[dname],months[mo],dnum.pad(2),yr,hou.pad(2),min.pad(2),sec.pad(2),pe];
+        for (var i =0;i<ids.length;i++)
+        document.getElementById(ids[i]).textContent = values[i];
+        }
+        function initClock(){
+          userAction();
+          updateClock();
+          window.setInterval("updateClock()",1);
+        }
+
+        </script>
+        </div>
+        <div class="kolumna">Bannery</div>
+        <div id="clear">
+          
+        </div>
+        <div id="stopka">
+          <button id="voiceBtn">Start Listening</button>
+          <div id="result"></div>
+          <p id="processing"></p>
+          
+          <script src="script.js"></script>
+        </div>
+       </div>
+      
+      
+     
+
+     
+      
+
+    </body>
+    </html>
+
+
+
+
+
+    
