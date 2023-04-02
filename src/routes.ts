@@ -12,7 +12,7 @@ const corsOptions = {
 routes.get("/", cors(corsOptions), (req, res) => {
   //place your code accessing mongo database here
   async function main(){
-    const uri ="mongodb+srv://adminkamil:adminpassword@weatherdata.vitbe4i.mongodb.net/?retryWrites=true&w=majority";
+    const uri ="mongodb+srv://KamilKras:QPMXmaBJFvSU8HUV@cluster0.wocxtx1.mongodb.net/?retryWrites=true&w=majority";
 
     const client = new MongoClient(uri);
 

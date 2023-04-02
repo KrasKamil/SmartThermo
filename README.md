@@ -12,7 +12,9 @@ zainstaluj npm install cors (do cross origin disabling - tutaj szczegoly https:/
 przed rozpoczeciem serwera skompiluj pliki komenda tsc (kompilacja typescript)
 wersja tsc 4.9.4
 wersja node 14.21.2
-skompiluj i odpal server komenda yarn start:dev lub [coderunner :)]
+skompiluj i odpal server komenda 
+yarn start:dev 
+lub [coderunner :)]
 sprawdz url w przegladarce: http://localhost:3333/
 powinien dzi wyrzucic odpowiedz z serwera
 włącz plik  vapage.html 

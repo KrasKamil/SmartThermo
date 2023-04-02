@@ -1,0 +1,143 @@
+.light-mode {
+    background-color: rgb(247, 247, 247);
+    color: black;
+}
+
+.light-mode #voiceBtn {
+    background-color: #2F4858;
+}
+
+.light-mode #voiceBtn:hover {
+    background-color: #263b49;
+}
+
+.light-mode #updateBtn {
+    background-color: #6a7b5b;
+}
+
+.light-mode #updateBtn:hover {
+    background-color: #0e0ba8;
+}
+
+.light-mode table {
+    color: black;
+    background-color: transparent;
+}
+
+.light-mode th,
+.light-mode td {
+    border-bottom: 1px solid black;
+}
+
+.light-mode h1 {
+    color: black;
+}
+
+.light-mode p {
+    color: rgb(255, 255, 255);
+}
+
+.light-mode #table {
+    color: transparent;
+}
+
+.light-mode .datetime {
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
+    border-color: #e3cb2e;
+}
+
+.light-mode .datetime:hover {
+    background-color: #c0c529;
+    box-shadow: 0 0 30px #e3e02e;
+}
+
+.light-mode .time span:not(:last-child) {
+    position: relative;
+    margin: 0 6px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 3px;
+}
+
+.light-mode .time span:last-child {
+    background: #dae32e;
+    font-size: 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 10px;
+    padding: 0 5px;
+    border-radius: 3px;
+}
+
+.light-mode #table {
+    color: rgb(0, 0, 0);
+}
+
+.light-mode .container::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    animation: circle 10s infinite ease-in-out;
+    opacity: 0.5;
+    width: 100px;
+    height: 100px;
+    background-color: #F8B195;
+    z-index: -1;
+}
+
+.light-mode p {
+    color: black;
+    font-size: 15;
+    font-weight: bold;
+}
+
+.light-mode .container::after {
+    content: "";
+    position: absolute;
+    top: 30%;
+    left: 30%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    animation: circle 15s infinite ease-in-out;
+    opacity: 0.4;
+    width: 200px;
+    height: 200px;
+    background-color: #C06C84;
+    z-index: -1;
+}
+
+.light-mode .container::before {
+    content: "";
+    position: absolute;
+    top: 80%;
+    left: 80%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    animation: circle 17s infinite ease-in-out;
+    opacity: 0.6;
+    width: 150px;
+    height: 150px;
+    background-color: #6C5B7B;
+    z-index: -1;
+}
+
+.light-mode #theme-button {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    margin-bottom: auto;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px;
+    border-color: #000000;
+    cursor: pointer;
+}
