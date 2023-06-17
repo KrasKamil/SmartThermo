@@ -75,18 +75,8 @@
 }
 
 .light-mode .container::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    animation: circle 10s infinite ease-in-out;
-    opacity: 0.5;
-    width: 100px;
-    height: 100px;
+    
     background-color: #F8B195;
-    z-index: -1;
 }
 
 .light-mode p {
@@ -98,14 +88,8 @@
 .light-mode .container::after {
     content: "";
     position: absolute;
-    top: 30%;
-    left: 30%;
-    transform: translate(-50%, -50%);
     border-radius: 50%;
-    animation: circle 15s infinite ease-in-out;
     opacity: 0.4;
-    width: 200px;
-    height: 200px;
     background-color: #C06C84;
     z-index: -1;
 }
@@ -115,9 +99,8 @@
     position: absolute;
     top: 80%;
     left: 80%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    animation: circle 17s infinite ease-in-out;
+   
+    
     opacity: 0.6;
     width: 150px;
     height: 150px;
