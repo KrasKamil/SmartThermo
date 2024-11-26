@@ -11,7 +11,7 @@ import pprint
 
 
 data={
-    "city": "krakow",
+    "city": "toronto",
     "temp_ins": "0",
     "hum_ins": "0",
     "pressure": "0",
@@ -58,13 +58,13 @@ def read_data_weather():
     global temp_o
     global city
     
-    city ="Kraków"
+    city ="Jaslo"
     url = f'https://api.openweathermap.org/data/2.5/weather?q={city},pl&appid=861c80e86a9b137787087ecd368774a4'
-    city = "Krakow"
-    res =requests.get(url)
+    city = "Jasło"
+    res = requests.get(url)
     filedata = res.json()
     speed = math.ceil(filedata['wind']['speed']*3.6)
-    wind = f'{speed}km/h'
+    wind = f'{speed} km/h'
     temp_o = math.ceil(round(filedata['main']['temp']-273.15,2))
     
     
@@ -103,8 +103,6 @@ def sendDataToServer():
     collection.insert_one(data)
     print("data was send")
     threading.Timer(120,sendDataToServer).start()
-    
-    
 
 #sense = SenseHat()
 dbname = get_database()

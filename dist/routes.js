@@ -20,7 +20,7 @@ routes.get("/", cors(corsOptions), (req, res) => {
     //place your code accessing mongo database here
     function main() {
         return __awaiter(this, void 0, void 0, function* () {
-            const uri = "mongodb://localhost:27017/";
+            const uri = "mongodb+srv://KamilKras:QPMXmaBJFvSU8HUV@cluster0.wocxtx1.mongodb.net/?retryWrites=true&w=majority";
             const client = new mongodb_1.MongoClient(uri);
             try {
                 yield client.connect();
