@@ -1,4 +1,0 @@
-pymongo==4.16.0
-Requests==2.32.5
-sense_hat==2.6.0
-urllib3==2.6.3
