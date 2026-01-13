@@ -1,6 +1,8 @@
 import { Router } from "express";
-import {MongoClient} from "mongodb";
+import { MongoClient } from "mongodb";
+import dotenv from "dotenv";
 const cors = require("cors");
+dotenv.config();
 
 const routes = Router();
 
@@ -11,10 +13,9 @@ const corsOptions = {
 
 routes.get("/", cors(corsOptions), (req, res) => {
   //place your code accessing mongo database here
-  async function main(){
-    const uri ="mongodb+srv://KamilKras:QPMXmaBJFvSU8HUV@cluster0.wocxtx1.mongodb.net/?retryWrites=true&w=majority";
-
-    const client = new MongoClient(uri);
+  async function main() {
+    const url = process.env.MONGO_URL;
+    const client = new MongoClient(url);
 
   try{  
     await client.connect();

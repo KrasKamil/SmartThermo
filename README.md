@@ -24,22 +24,21 @@ włącz plik  vapage.html
 
 ## Run this project
 
+1. Zainstaluj zależności:
+```bash
+npm install
+```
+2. Uruchom aplikację w trybie deweloperskim (z nodemon):
+```
+npm run start:dev
+```
+## Build and Run (Production)
 - Install the dependencies:
 ```
-yarn
-```
-- Run the app:
-```
-yarn start:dev
-```
-## Build and Run
-- Install the dependencies:
-```
-yarn
+npm run build
 ```
 - Build and run the app:
 ```
-yarn build
-yarn start:prod
+npm run start:prod
 ```
 
