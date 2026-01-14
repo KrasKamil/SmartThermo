@@ -122,7 +122,7 @@
             <script type="text/javascript">
                 const userAction = async() => {
 
-                    const response = await fetch('http://localhost:8888//');
+                    const response = await fetch('http://localhost:8888/');
                     const myJson = await response.json(); //extract JSON from the http response
 
                     document.getElementById("City").innerHTML += myJson.city + "<br>";

@@ -32,7 +32,7 @@ routes.get("/", cors(corsOptions), (req, res) => {
 main().catch(console.error);
 
 async function findData(client:any, nameOfListing:string){
-    const result = await client.db("weather").collection("weatherdata").findOne();
+    const result = await client.db("smartthermodatabase").collection("weatherdata").findOne();
     
     /*if (result){
         console.log(`Found a listing in the collection `);
