@@ -1,134 +1,152 @@
-const hello = ["Hi Bro! what\'s up?",
-        "hi, how are you doing?",
-        "What\'s up?",
-        "Ahoy matey! How are ye?",
-        "What\'s shaking?",
-        "How 's going?"
-    ],
+// Dane do rozmowy
+const hello = ["Hi Bro! what's up?", "Hi, how are you doing?", "What's up?", "Ahoy matey!", "How's going?"];
+const joke = [
+    "How many programmers does it take to change a light bulb? None, it's a hardware problem...",
+    "Why do mummies have trouble keeping friends? Because they're so wrapped up in themselves.",
+    "Why don't scientists trust atoms? Because they make up everything."
+];
 
-    joke = ["How many programmers does it take to change a light bulb? None, it\'s a hardware problem...",
-        "Why do mummies have trouble keeping friends? Because they\'re so wrapped up in themselves.",
-        "What did one ocean say to the other ocean? Nothing, they just waved.",
-        "Two goldfish are in a tank. One turns to the other and says, Do you know how to drive this thing?",
-        "Why did the pirate buy an eye patch?  Because he couldn\'t afford an iPad!",
-        "What did the pirate say on his 80th birthday? Aye Matey!",
-        "Why don\'t scientists trust atoms? Because they make up everything."
-    ];
-
-// Store voices
 let voices = [];
-// UI elements
 const voiceBtn = document.getElementById("voiceBtn");
-const result = document.getElementById("result");
-const processing = document.getElementById("processing");
+const voiceOverlay = document.getElementById("voice-overlay");
+const voiceStatus = document.getElementById("voice-status");
 
-// Wait on voices to be loaded before fetching list
+// Ładowanie głosów
 window.speechSynthesis.onvoiceschanged = () => {
     voices = window.speechSynthesis.getVoices();
 };
 
+// Funkcja sterująca popupem
+function toggleVoicePopup(forceClose = false) {
+    if (!voiceOverlay) {
+        console.error("Brak elementu overlay!");
+        return;
+    }
+
+    if (forceClose) {
+        voiceOverlay.classList.add("hidden");
+        // Opcjonalnie resetujemy tekst po zamknięciu
+        setTimeout(() => { if (voiceStatus) voiceStatus.innerText = "Słucham..."; }, 300);
+    } else {
+        voiceOverlay.classList.remove("hidden");
+        if (voiceStatus) voiceStatus.innerText = "Słucham...";
+    }
+}
+
 // Speech to Text
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let toggleBtn = null;
+
 if (typeof SpeechRecognition === "undefined") {
-    voiceBtn.remove();
-    result.innerHTML = "<strong>Your browser does not support Speech API. Please download latest Chrome version.<strong>";
+    if (voiceBtn) voiceBtn.remove();
+    console.error("Twoja przeglądarka nie obsługuje Speech API.");
 } else {
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; // If true, the silence period is longer
-    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    // Gdy mikrofon faktycznie ruszy
+    recognition.onstart = () => {
+        console.log("Mikrofon uruchomiony");
+        toggleVoicePopup(false); // Pokaż popup
+    };
+
+    // Gdy mikrofon skończy słuchać
+    recognition.onend = () => {
+        console.log("Mikrofon wyłączony");
+        // Nie zamykamy od razu, żeby użytkownik zobaczył wynik (zamykamy ręcznie lub po procesowaniu)
+        // toggleVoicePopup(true); 
+    };
+
+    // OBSŁUGA BŁĘDÓW (Ważne!)
+    recognition.onerror = (event) => {
+        console.error("Błąd mikrofonu:", event.error);
+        if (voiceStatus) voiceStatus.innerText = "Błąd: " + event.error;
+        // Zamknij po chwili jeśli błąd
+        setTimeout(() => toggleVoicePopup(true), 3000);
+    };
+
     recognition.onresult = event => {
         const current = event.resultIndex;
         const recognitionResult = event.results[current];
         const recognitionText = recognitionResult[0].transcript;
 
         if (recognitionResult.isFinal) {
-            processing.innerHTML = "processing ...";
+            console.log("Usłyszano:", recognitionText);
 
+            if (voiceStatus) voiceStatus.innerText = "Mam!";
+
+            // Przetwórz komendę
             const response = process(recognitionText);
-            const p = document.createElement("p");
-            p.innerHTML = `<strong>You said:</strong> ${recognitionText} </br><strong>VA said:</strong> ${response}`;
-            processing.innerHTML = "";
-            result.appendChild(p);
 
-            readOutLoud(response);
-        } else {
-            processing.innerHTML = `listening: ${recognitionText}`;
+            // Zamknij popup po chwili i powiedz odpowiedź
+            setTimeout(() => {
+                toggleVoicePopup(true);
+                readOutLoud(response);
+            }, 1000);
         }
     };
-    let listening = false;
-    toggleBtn = () => {
-        if (listening) {
-            recognition.stop();
-            voiceBtn.textContent = "Start listening";
-        } else {
-            recognition.start();
-            voiceBtn.textContent = "Stop listening";
-        }
-        listening = !listening;
-    };
-    voiceBtn.addEventListener("click", toggleBtn);
+
+    // Obsługa kliknięcia przycisku
+    if (voiceBtn) {
+        voiceBtn.addEventListener("click", () => {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.log("Mikrofon już działa, restartuję...");
+                recognition.stop();
+            }
+        });
+    }
 }
 
-// Processor
+// Logika Asystenta
 function process(rawText) {
-    let text = rawText.replace(/\s/g, "").replace(/\'/g, "");
-    text = text.toLowerCase();
-    let response = null;
+    let text = rawText.replace(/\s/g, "").replace(/\'/g, "").toLowerCase();
+    let response = "I didn't catch that.";
 
-    if (text.includes("hello") || text.trim() == "hi" || text.includes("hey")) {
-        response = getRandomItemFromArray(hello);
+    if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
+        response = getRandomItem(hello);
     } else if (text.includes("yourname")) {
         response = "My name's AL.";
-    } else if (text.includes("howareyou") || text.includes("whatsup")) {
-        response = "I'm fine. How about you?";
-    } else if (text.includes("whattimeisit")) {
+    } else if (text.includes("time")) {
         response = new Date().toLocaleTimeString();
     } else if (text.includes("joke")) {
-        response = getRandomItemFromArray(joke);
+        response = getRandomItem(joke);
     } else if (text.includes("play") && text.includes("despacito")) {
-        response = "Opened";
-        window.open("https://www.youtube.com/watch?v=kJQP7kiw5Fk", "_blank", "noopener");
+        response = "Playing Despacito...";
+        window.open("https://www.youtube.com/watch?v=kJQP7kiw5Fk", "_blank");
     } else if (text.includes("open") && text.includes("spotify")) {
-        response = "Open spotify ";
-        window.open("https://open.spotify.com/", "_blank", "noopener");
-        toggleBtn();
-    } else if (text.includes("flip") && text.includes("coin")) {
-        response = Math.random() < 0.5 ? "heads" : "tails";
-    } else if (text.includes("bye") || text.includes("stop")) {
-        response = "Bye!!";
-        toggleBtn();
+        response = "Opening Spotify...";
+        if (typeof openSpotifyPopup === 'function') openSpotifyPopup();
+    } else if (text.includes("stop") || text.includes("bye")) {
+        response = "Bye!";
     } else if (text.includes("play")) {
-        response = "Looking for results on YouTube";
-        window.open(`https://www.youtube.com/results?search_query=${rawText.replace("search", "")}`, "_blank", "noopener")
-        toggleBtn();
+        response = "Searching on YouTube...";
+        window.open(`https://www.youtube.com/results?search_query=${rawText.replace("play", "")}`, "_blank");
     }
-    if (!response) {
-        window.open(`http://google.com/search?q=${rawText.replace("search", "")}`, "_blank", "noopener");
-        toggleBtn();
-        return `I found some information about ${rawText}`;
+
+    if (response === "I didn't catch that.") {
+        window.open(`http://google.com/search?q=${rawText}`, "_blank");
+        return `Searching Google for ${rawText}`;
     }
 
     return response;
 }
 
-function getRandomItemFromArray(array) {
-    const randomItem = array[Math.floor(Math.random() * array.length)];
-    return randomItem;
-};
+function getRandomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
 
-// Set the text and voice attributes.
 function readOutLoud(message) {
     const speech = new SpeechSynthesisUtterance();
-
     speech.text = message;
     speech.volume = 1;
     speech.rate = 1;
-    speech.pitch = 1.56;
-    speech.voice = voices[47];
-
+    speech.pitch = 1;
+    if (voices.length > 0) speech.voice = voices[0];
     window.speechSynthesis.speak(speech);
-}// --- SPOTIFY INTEGRATION (Best Practices) ---
+}
+// --- SPOTIFY INTEGRATION (Best Practices) ---
 
 const SPOTIFY_CONFIG = {
     apiBase: 'https://api.spotify.com/v1/me/player',
@@ -149,10 +167,10 @@ window.addEventListener('load', () => {
         // Zapisz tokeny w pamięci (lub localStorage jeśli wolisz trwałość między odświeżeniami)
         accessToken = tokenParams;
         refreshToken = refreshParams;
-        
+
         // Wyczyść URL dla estetyki
         window.history.pushState({}, document.title, window.location.pathname);
-        
+
         // Pokaż player
         activatePlayerUI();
     }
@@ -164,7 +182,7 @@ function activatePlayerUI() {
 
     // Pobierz stan odtwarzania od razu
     getCurrentPlaybackState();
-    
+
     // Odświeżaj co 5 sekund
     setInterval(getCurrentPlaybackState, 5000);
 
@@ -209,7 +227,7 @@ function updateWidgetUI(data) {
     document.getElementById('current-track').innerText = track.name;
     document.getElementById('current-artist').innerText = track.artists.map(a => a.name).join(', ');
     document.getElementById('current-art').src = track.album.images[0].url;
-    
+
     const playBtn = document.getElementById('play-btn');
     playBtn.innerText = data.is_playing ? '⏸' : '▶️';
 }
@@ -232,29 +250,29 @@ async function togglePlayback() {
     const btn = document.getElementById('play-btn');
     const isPlaying = btn.innerText === '⏸';
     const endpoint = isPlaying ? 'pause' : 'play';
-    
+
     try {
         await fetch(`${SPOTIFY_CONFIG.apiBase}/${endpoint}`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         setTimeout(getCurrentPlaybackState, 500);
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 // Odświeżanie tokenu przez Backend
 async function refreshAccessToken() {
-    if(!refreshToken) return;
-    
+    if (!refreshToken) return;
+
     try {
         const res = await fetch(`/refresh_token?refresh_token=${refreshToken}`);
         const data = await res.json();
-        if(data.access_token) {
+        if (data.access_token) {
             accessToken = data.access_token;
             console.log("Token odświeżony!");
             getCurrentPlaybackState(); // Ponów próbę
         }
-    } catch(e) {
+    } catch (e) {
         console.error("Nie udało się odświeżyć tokenu", e);
     }
 }

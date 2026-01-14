@@ -4,28 +4,62 @@ import path from 'path';
 import dotenv from 'dotenv';
 import axios from 'axios';
 import querystring from 'querystring';
+import { MongoClient } from 'mongodb'; 
 
 // Ładowanie zmiennych środowiskowych
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8888;
+const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1:27017"; // [DODANO] URL bazy
 
 // Middleware
 app.use(cors());
-app.use(express.static(path.join(__dirname, '../'))); // Serwowanie plików frontendu (vapage.html, itp.)
+app.use(express.json()); // [DODANO] Obsługa JSON
+app.use(express.static(path.join(__dirname, '../'))); // Serwowanie plików frontendu
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI;
 
-// --- ENDPOINTY SPOTIFY ---
+// --- [NOWOŚĆ] ENDPOINT POGODOWY (z pliku routes.ts) ---
 
-// 1. Login: Przekierowuje użytkownika do Spotify w celu autoryzacji
+app.get('/api/weather', async (req: Request, res: Response) => {
+    // SZPIEG 1: Czy zapytanie w ogóle dociera?
+    console.log("👉 Otrzymano zapytanie GET /api/weather"); 
+
+    const client = new MongoClient(MONGO_URL);
+
+    try {
+        await client.connect();
+        const database = client.db("smartthermodatabase");
+        const collection = database.collection("weatherdata");
+        
+        const result = await collection.findOne({}); 
+
+        // SZPIEG 2: Co zwróciła baza?
+        console.log("👉 Wynik z MongoDB:", result); 
+
+        if (result) {
+            res.json(result);
+        } else {
+            console.log("👉 Baza jest pusta! Zwracam 404.");
+            res.status(404).json({ error: "Brak danych w bazie" });
+        }
+    } catch (error) {
+        console.error("👉 Błąd połączenia:", error);
+        res.status(500).json({ error: "Błąd połączenia z bazą" });
+    } finally {
+        await client.close();
+    }
+});
+
+// --- KONIEC NOWEGO ENDPOINTU ---
+
+
+// --- ENDPOINTY SPOTIFY (Bez zmian) ---
 app.get('/login', (req: Request, res: Response) => {
     const scope = 'user-read-private user-read-email user-read-playback-state user-modify-playback-state streaming';
-    
-    // Generujemy losowy ciąg (state) dla bezpieczeństwa (opcjonalne, ale zalecane)
     const state = Math.random().toString(36).substring(7);
 
     res.redirect('https://accounts.spotify.com/authorize?' +
@@ -38,7 +72,6 @@ app.get('/login', (req: Request, res: Response) => {
         }));
 });
 
-// 2. Callback: Spotify odsyła użytkownika tutaj z kodem autoryzacyjnym
 app.get('/callback', async (req: Request, res: Response) => {
     const code = req.query.code || null;
     const state = req.query.state || null;
@@ -47,7 +80,6 @@ app.get('/callback', async (req: Request, res: Response) => {
         res.redirect('/#' + querystring.stringify({ error: 'state_mismatch' }));
     } else {
         try {
-            // Wymiana kodu na Access Token (bezpiecznie po stronie serwera)
             const response = await axios({
                 method: 'post',
                 url: 'https://accounts.spotify.com/api/token',
@@ -63,10 +95,6 @@ app.get('/callback', async (req: Request, res: Response) => {
             });
 
             const { access_token, refresh_token } = response.data;
-
-            // Przekierowanie z powrotem na frontend z tokenem w URL
-            // (W produkcyjnych aplikacjach bankowych używa się tu HttpOnly Cookies, 
-            // ale dla Web Playback SDK musimy przekazać token do JS)
             
             res.redirect(`http://localhost:${PORT}/vapage.html#` + 
                 querystring.stringify({ access_token, refresh_token }));
@@ -78,7 +106,6 @@ app.get('/callback', async (req: Request, res: Response) => {
     }
 });
 
-// 3. Refresh Token: Frontend prosi o nowy token, gdy stary wygaśnie
 app.get('/refresh_token', async (req: Request, res: Response) => {
     const refresh_token = req.query.refresh_token as string;
     
@@ -106,6 +133,7 @@ app.get('/refresh_token', async (req: Request, res: Response) => {
 
 // Start serwera
 app.listen(PORT, () => {
-    console.log(`✅ Serwer działa bezpiecznie na http://localhost:${PORT}`);
-    console.log(`🔗 Frontend dostępny na http://localhost:${PORT}/vapage.html`);
+    console.log(`✅ Serwer działa na http://localhost:${PORT}`);
+    console.log(`🔗 Frontend: http://localhost:${PORT}/vapage.html`);
+    console.log(`📡 API Pogodowe: http://localhost:${PORT}/api/weather`);
 });
