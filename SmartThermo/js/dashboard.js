@@ -5,8 +5,28 @@ let currentStationIndex = -1; // Które radio teraz gra?
 let isRadioPlaying = false;
 let stationsLoaded = false;
 let currentPlayPromise = null;
+let use24HourFormat = false;
 
 // --- 1. OBSŁUGA UI (Motyw, Popup) ---
+
+async function loadAppConfig() {
+    try {
+        const res = await fetch('http://localhost:8888/api/config'); // lub relatywnie '/api/config'
+        const data = await res.json();
+
+        if (data.clockFormat === '24') {
+            use24HourFormat = true;
+            console.log("🕒 Tryb zegara: 24h");
+        } else {
+            use24HourFormat = false;
+            console.log("🕒 Tryb zegara: 12h (AM/PM)");
+        }
+        // Wymuś odświeżenie zegara od razu po pobraniu konfigu
+        updateClock();
+    } catch (e) {
+        console.error("Nie udało się pobrać konfiguracji zegara", e);
+    }
+}
 
 function toggleTheme() {
     document.body.classList.toggle("light-mode");
@@ -32,29 +52,46 @@ function updateClock() {
         min = now.getMinutes(),
         sec = now.getSeconds();
 
-    let pe = "AM";
+    let pe = ""; // AM/PM lub puste
     let hourShow = hou;
 
-    if (hourShow == 0) hourShow = 12;
-    if (hourShow > 12) {
-        hourShow -= 12;
-        pe = 'PM';
+    // LOGIKA FORMATU
+    if (use24HourFormat) {
+        // Tryb 24h: Godzina bez zmian (0-23), brak dopisku AM/PM
+        pe = "";
+    } else {
+        // Tryb 12h: Logika AM/PM
+        pe = "AM";
+        if (hourShow == 0) hourShow = 12;
+        if (hourShow > 12) {
+            hourShow -= 12;
+            pe = 'PM';
+        }
     }
 
     const pad = (num) => num.toString().padStart(2, '0');
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    // Aktualizacja daty
     const ids = ["dayname", "month", "daynum", "year", "hour", "minute", "second", "period"];
     const values = [week[dname], months[mo], pad(dnum), yr, pad(hourShow), pad(min), pad(sec), pe];
 
     for (let i = 0; i < ids.length; i++) {
         const el = document.getElementById(ids[i]);
-        if (el) el.textContent = values[i];
+        if (el) {
+            el.textContent = values[i];
+
+            // [OPCJONALNIE] Ukryj element 'period' (AM/PM) jeśli jest tryb 24h, żeby nie było pustego miejsca
+            if (ids[i] === "period") {
+                el.style.display = use24HourFormat ? "none" : "inline-block";
+            }
+        }
     }
 }
 
 function initClock() {
+    loadAppConfig(); // Pobierz konfigurację przy starcie
     updateClock();
     window.setInterval(updateClock, 1000);
     userAction(); // Pobierz pogodę przy starcie
@@ -339,3 +376,100 @@ function updateMiniPlayerState(isPlaying) {
 document.addEventListener('DOMContentLoaded', () => {
     loadStations();
 });
+
+function updateMiniPlayerState(isPlaying) {
+    const anim = document.getElementById('mini-anim');
+    if (anim) {
+        if (isPlaying) {
+            anim.style.opacity = '1';
+        } else {
+            anim.style.opacity = '0.2'; // Przygaś animację jak pauza
+        }
+    }
+}
+
+// --- 8. INICJALIZACJA ---
+
+// Wywołaj ładowanie listy stacji w tle przy starcie, 
+// żeby przyciski Next/Prev działały od razu (zanim otworzysz popup)
+document.addEventListener('DOMContentLoaded', () => {
+    loadStations();
+});
+// --- 9. USTAWIENIA & BLUETOOTH ---
+
+function openSettingsPopup() {
+    const overlay = document.getElementById('settings-overlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+}
+
+function closeSettingsPopup() {
+    const overlay = document.getElementById('settings-overlay');
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
+}
+
+async function scanBluetooth() {
+    const list = document.getElementById('bt-device-list');
+    const status = document.getElementById('bt-status');
+
+    list.innerHTML = '<li style="color: #ccc; text-align: center;">Szukam urządzeń... ⏳</li>';
+    status.innerText = "";
+
+    try {
+        const res = await fetch('http://localhost:8888/api/bluetooth/scan');
+        const devices = await res.json();
+
+        list.innerHTML = '';
+
+        if (devices.length === 0) {
+            list.innerHTML = '<li style="color: #aaa; text-align: center;">Nie znaleziono urządzeń. Upewnij się, że Bluetooth w telefonie jest widoczny.</li>';
+            return;
+        }
+
+        devices.forEach(dev => {
+            const li = document.createElement('li');
+            li.className = 'bt-item';
+
+            // Ukryj dziwne nazwy lub puste
+            const name = dev.name.trim() || dev.mac;
+
+            li.innerHTML = `
+                <span>📱 ${name}</span>
+                <button onclick="connectBluetooth('${dev.mac}')">Połącz</button>
+            `;
+            list.appendChild(li);
+        });
+
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<li style="color: red;">Błąd skanowania</li>';
+    }
+}
+
+async function connectBluetooth(mac) {
+    const status = document.getElementById('bt-status');
+    status.innerText = "Łączenie... (Zaakceptuj parowanie na telefonie)";
+    status.style.color = "#00d2ff";
+
+    try {
+        const res = await fetch('http://localhost:8888/api/bluetooth/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mac: mac })
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            status.innerText = "✅ " + data.message;
+            status.style.color = "#4CAF50";
+        } else {
+            status.innerText = "⚠️ " + data.message;
+            status.style.color = "orange";
+        }
+    } catch (e) {
+        status.innerText = "❌ Błąd połączenia";
+        status.style.color = "red";
+    }
+}
