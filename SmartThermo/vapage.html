@@ -38,6 +38,22 @@
             </div>
         </div>
     </div>
+    <div id="radio-overlay" class="hidden" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); justify-content: center; align-items: center;">
+        <div class="glass-effect" style="padding: 25px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
+            <button class="close-btn" onclick="closeRadioPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+
+            <h2 style="margin-bottom: 20px;">Wybierz Stację 📻</h2>
+
+            <div id="stations-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                <p>Ładowanie listy...</p>
+            </div>
+
+            <div id="radio-player-controls" class="hidden" style="margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                <p id="radio-now-playing" style="color: #00d2ff; font-weight: bold; margin-bottom: 10px; font-size: 1.1em;">Wybierz stację</p>
+                <audio id="radio-audio" controls style="width: 100%; height: 35px;"></audio>
+            </div>
+        </div>
+    </div>
 
     <div id="voice-overlay" class="hidden">
         <div class="voice-box glass-effect">
@@ -55,6 +71,9 @@
 
         <button id="spotify-button" onclick="openSpotifyPopup()">
             <img src="style-css/spotify.png" alt="Uruchom Spotify">
+        </button>
+        <button id="radio-button" onclick="openRadioPopup()">
+            📻
         </button>
 
         <button id="voiceBtn">
@@ -121,6 +140,24 @@
                     <span id='minute'>00</span>:
                     <span id='second'>00</span>
                     <span id='period'>AM</span>
+                </div>
+            </div>
+            <div id="mini-player" class="media-info glass-effect hidden">
+                <div class="media-icon" id="mini-icon">🎵</div>
+
+                <div class="media-text">
+                    <span id="mini-title">Brak muzyki</span>
+                    <span id="mini-subtitle">Oczekiwanie...</span>
+                </div>
+
+                <div class="mini-controls">
+                    <button onclick="miniControl('prev')">⏮</button>
+                    <button id="mini-play-btn" onclick="miniControl('play')">⏸</button>
+                    <button onclick="miniControl('next')">⏭</button>
+                </div>
+
+                <div class="media-anim" id="mini-anim">
+                    <span></span><span></span><span></span>
                 </div>
             </div>
 

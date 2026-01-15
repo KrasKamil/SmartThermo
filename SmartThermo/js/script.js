@@ -123,6 +123,12 @@ function process(rawText) {
     } else if (text.includes("play")) {
         response = "Searching on YouTube...";
         window.open(`https://www.youtube.com/results?search_query=${rawText.replace("play", "")}`, "_blank");
+    } else if (text.includes("radio")) {
+        response = "Turning on the radio...";
+        openRadioPopup();
+        // Optional: Auto-search for "Hits"
+        document.getElementById('radio-search-input').value = "Hits";
+        searchRadio();
     }
 
     if (response === "I didn't catch that.") {
@@ -230,6 +236,19 @@ function updateWidgetUI(data) {
 
     const playBtn = document.getElementById('play-btn');
     playBtn.innerText = data.is_playing ? '⏸' : '▶️';
+
+    // Aktualizacja mini playera
+    // [NOWOŚĆ] Aktualizuj Mini Player pod zegarem
+    if (data.is_playing) {
+        // Jeśli gra, pokaż info
+        if (typeof updateMiniPlayer === 'function') {
+            updateMiniPlayer(track.name, track.artists[0].name, "spotify");
+        }
+    } else {
+        // Opcjonalnie: Ukryj jeśli pauza, albo zostaw ostatni utwór
+        // updateMiniPlayer(track.name, "Wstrzymano", "spotify");
+    }
+
 }
 
 // Sterowanie (Play, Pause, Next, Prev)

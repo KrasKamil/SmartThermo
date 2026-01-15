@@ -45,6 +45,106 @@
         #voiceBtn:hover {
             transform: scale(1.15);
         }
+        
+        #stations-grid {
+            display: grid;
+            /* Automatyczne dopasowanie kolumn */
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 15px;
+            /* Odstęp między kafelkami */
+            max-height: 350px;
+            overflow-y: auto;
+            /* Pasek przewijania */
+            padding: 10px;
+            /* Styl paska przewijania (dla Chrome/Safari/Edge) */
+            scrollbar-width: thin;
+            scrollbar-color: #00d2ff rgba(255, 255, 255, 0.1);
+        }
+        
+        #radio-button {
+            position: fixed;
+            left: 15px;
+            top: 215px;
+            /* Below the Voice button */
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            background-color: #00d2ff;
+            /* Blue color for Radio */
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+        
+        #radio-button:hover {
+            transform: scale(1.15);
+        }
+        
+        .radio-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .radio-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .radio-tile {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            /* Układ wewnątrz kafelka */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            /* PŁYNNA ANIMACJA */
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            /* FIX NA MIGOTANIE (Wymuszenie akceleracji GPU) */
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        
+        .radio-tile:hover {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: #00d2ff;
+            /* Lekkie powiększenie i cień */
+            transform: scale(1.05) translateZ(0);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 210, 255, 0.2);
+            z-index: 10;
+            /* Wyciągnij na wierzch */
+        }
+        
+        .radio-tile .icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+        }
+        
+        .radio-tile .title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .radio-tile .subtitle {
+            font-size: 11px;
+            color: #aaa;
+        }
         /* 1. Motyw (Biały) */
         
         #theme-button {
@@ -491,4 +591,133 @@
         
         .voice-box .close-btn:hover {
             color: white;
+        }
+        /* --- MINI PLAYER (POD ZEGAREM) --- */
+        
+        .media-info {
+            margin-top: 20px;
+            padding: 15px 25px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 350px;
+            /* Taka sama jak zegar */
+            transition: all 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* Ukrywanie gdy nic nie gra */
+        
+        .media-info.hidden {
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+            position: absolute;
+            /* Żeby nie zajmował miejsca */
+        }
+        
+        .media-icon {
+            font-size: 30px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
+        }
+        
+        .media-text {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            flex: 1;
+        }
+        
+        #mini-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+        
+        #mini-subtitle {
+            font-size: 12px;
+            color: #bbb;
+        }
+        /* Animacja equalizera */
+        
+        .media-anim {
+            display: flex;
+            gap: 3px;
+            height: 15px;
+            align-items: flex-end;
+        }
+        
+        .media-anim span {
+            width: 3px;
+            background: #00d2ff;
+            animation: bounce 1s infinite ease-in-out;
+        }
+        
+        .media-anim span:nth-child(1) {
+            animation-delay: 0s;
+            height: 60%;
+        }
+        
+        .media-anim span:nth-child(2) {
+            animation-delay: 0.2s;
+            height: 100%;
+        }
+        
+        .media-anim span:nth-child(3) {
+            animation-delay: 0.4s;
+            height: 50%;
+        }
+        
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: scaleY(0.5);
+            }
+            50% {
+                transform: scaleY(1.0);
+            }
+        }
+        /* --- MINI PLAYER CONTROLS --- */
+        
+        .mini-controls {
+            display: flex;
+            gap: 5px;
+            margin-right: 15px;
+            /* Odstęp od animacji */
+        }
+        
+        .mini-controls button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            /* Okrągłe przyciski */
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        
+        .mini-controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .mini-controls button:active {
+            transform: scale(0.95);
+        }
+        /* Ukrywamy animację na bardzo małych ekranach, żeby przyciski się zmieściły */
+        
+        @media (max-width: 400px) {
+            #mini-anim {
+                display: none;
+            }
         }
