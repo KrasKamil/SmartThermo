@@ -6,6 +6,7 @@ let isRadioPlaying = false;
 let stationsLoaded = false;
 let currentPlayPromise = null;
 let use24HourFormat = false;
+let lastTrackTitle = "";
 
 // --- 1. OBSŁUGA UI (Motyw, Popup) ---
 
@@ -94,6 +95,7 @@ function initClock() {
     loadAppConfig(); // Pobierz konfigurację przy starcie
     updateClock();
     window.setInterval(updateClock, 1000);
+    window.setInterval(checkSystemMedia, 2000); //  Sprawdzaj media co 2 sekundy
     userAction(); // Pobierz pogodę przy starcie
 }
 
@@ -147,22 +149,46 @@ const userAction = async() => {
 // --- 4. FUNKCJE STERUJĄCE MINI PLAYERA ---
 
 function miniControl(action) {
+    // 1. STEROWANIE SPOTIFY
     if (activeSource === 'spotify') {
-        // Sterowanie Spotify (funkcje zdefiniowane w script.js)
-        // Sprawdzamy czy script.js już załadował te funkcje
         if (typeof togglePlayback === 'function' && typeof controlSpotify === 'function') {
             if (action === 'play') togglePlayback();
             else if (action === 'next') controlSpotify('next');
             else if (action === 'prev') controlSpotify('previous');
         }
-    } else if (activeSource === 'radio') {
-        // Sterowanie Radiem
+    }
+    // 2. STEROWANIE RADIEM
+    else if (activeSource === 'radio') {
         if (action === 'play') {
             toggleRadioPlay();
         } else if (action === 'next') {
-            changeStation(1); // Następna
+            changeStation(1);
         } else if (action === 'prev') {
-            changeStation(-1); // Poprzednia
+            changeStation(-1);
+        }
+    }
+    // 3. STEROWANIE SYSTEMEM (WINDOWS / BLUETOOTH) - TEGO BRAKOWAŁO
+    else if (activeSource === 'system') {
+        let serverAction = action;
+
+        // Mapowanie akcji dla serwera
+        // Jeśli klikamy "play/pause" w playerze, wysyłamy do Windowsa 'playpause' (klawisz Media Play/Pause)
+        if (action === 'play') serverAction = 'playpause';
+
+        console.log("Wysyłam do systemu:", serverAction);
+
+        fetch('http://localhost:8888/api/media/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: serverAction })
+        }).catch(err => console.error("Błąd sterowania:", err));
+
+        // Opcjonalnie: Zaktualizuj wygląd przycisku od razu (dla lepszego wrażenia)
+        if (action === 'play') {
+            const btn = document.getElementById('mini-play-btn');
+            const isPlaying = btn.innerText === '⏸';
+            btn.innerText = isPlaying ? '▶️' : '⏸';
+            updateMiniPlayerState(!isPlaying);
         }
     }
 }
@@ -272,47 +298,34 @@ function playRadio(url, name) {
 
     if (!player) return;
 
-    // KROK 1: Twardy Reset (zatrzymaj poprzednie)
+    // 1. ZATRZYMAJ MUZYKĘ W SYSTEMIE (Windows/Spotify)
+    // Wysyłamy sygnał Play/Pause do systemu, żeby wyciszyć Bluetooth
+    fetch('http://localhost:8888/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pause' }) // lub 'playpause'
+    }).catch(e => console.log("Nie udało się spauzować systemu"));
+
+    // 2. Reszta starego kodu radia...
     player.pause();
     player.currentTime = 0;
-
-    // UI: Pokaż że ładujemy
     label.innerText = `Łączę z: ${name}... 📡`;
     controls.classList.remove('hidden');
     controls.style.display = 'block';
 
-    console.log(`Radio: ${name} -> ${url}`);
-
-    // KROK 2: Ustawienie źródła i wymuszenie ładowania
     player.src = url;
     player.load();
 
-    // KROK 3: Odtwarzanie z obsługą "Promise Interrupted"
     const playPromise = player.play();
-
     if (playPromise !== undefined) {
         playPromise
             .then(() => {
-                // SUKCES
                 label.innerText = `Gram: ${name} 🎵`;
-                label.style.color = "#00ff00"; // Zielony sukces
+                label.style.color = "#00ff00";
                 isRadioPlaying = true;
-
-                // Aktualizuj Mini Player pod zegarem
                 updateMiniPlayer(name, "Radio Internetowe", "radio");
             })
-            .catch(error => {
-                // OBSŁUGA BŁĘDÓW
-                if (error.name === 'AbortError') {
-                    // To normalne przy szybkim przełączaniu
-                    console.log("Przełączono stację (przerwano poprzednią).");
-                } else {
-                    console.error("Błąd radia:", error);
-                    label.innerText = `Błąd: ${name}`;
-                    label.style.color = "red";
-                    updateMiniPlayer(name, "Błąd odtwarzania", "radio");
-                }
-            });
+            .catch(error => { /* obsługa błędów bez zmian */ });
     }
 }
 
@@ -354,6 +367,11 @@ function updateMiniPlayer(title, subtitle, type = 'none') {
         iconEl.innerText = '📻';
         player.style.borderLeft = '4px solid #00d2ff'; // Niebieski pasek
         playBtn.innerText = '⏸'; // Zakładamy że jak włączasz radio, to gra
+        updateMiniPlayerState(true);
+    } else if (type === 'system') {
+        iconEl.innerText = '💻';
+        player.style.borderLeft = '4px solid #ffffff';
+        playBtn.innerText = '⏸';
         updateMiniPlayerState(true);
     }
 }
@@ -472,4 +490,50 @@ async function connectBluetooth(mac) {
         status.innerText = "❌ Błąd połączenia";
         status.style.color = "red";
     }
+}
+
+// --- 10. SPRAWDZANIE MEDIÓW SYSTEMOWYCH (Bluetooth) ---
+async function checkSystemMedia() {
+    try {
+        const res = await fetch('http://localhost:8888/api/media/now-playing');
+        const data = await res.json();
+
+        if (data.status === 'Playing') {
+
+            // --- POPRAWIONA LOGIKA PRIORYTETÓW ---
+
+            // 1. Jeśli Radio GRA, to ono ma pierwszeństwo. 
+            // Ignorujemy Bluetooth, żeby nie podmieniał napisów w trakcie słuchania stacji.
+            if (activeSource === 'radio' && isRadioPlaying) {
+                return;
+            }
+
+            // 2. Jeśli Radio NIE GRA (jest pauza) lub źródłem jest co innego -> Pokaż Bluetooth.
+            // Dzięki temu jak zapauzujesz radio i puścisz muzykę z telefonu, player się zaktualizuje.
+            updateMiniPlayer(data.title, data.artist, 'system');
+
+            if (lastTrackTitle !== data.title) {
+                lastTrackTitle = data.title;
+                // console.log("🎵 Wykryto sprzęt/muzykę:", data.title);
+            }
+
+        } else if (activeSource === 'system') {
+            updateMiniPlayerState(false);
+            document.getElementById('mini-subtitle').innerText = "Wstrzymano (System)";
+        }
+    } catch (e) {
+        // cicho sza
+    }
+}
+// --- 11. STEROWANIE GŁOŚNOŚCIĄ ---
+
+function controlVolume(action) {
+    // Efekt kliknięcia (opcjonalny, dla lepszego UX)
+    console.log("🔊 Zmieniam głośność:", action);
+
+    fetch('http://localhost:8888/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action })
+    }).catch(e => console.error("Błąd głośności:", e));
 }

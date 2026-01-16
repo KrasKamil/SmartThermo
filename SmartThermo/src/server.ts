@@ -33,50 +33,97 @@ app.use(express.static(path.join(__dirname, '../')));
 // 1. Uniwersalny wykonawca komend
 const runCommand = (command: string): Promise<string> => {
     return new Promise((resolve) => {
-        // Używamy kodowania utf8 i ignorujemy błędy, żeby nie wywalać serwera
         exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
-            if (error) {
-                // console.warn(`Cmd Warning: ${stderr || error.message}`); 
-                resolve(""); 
-            } else {
-                resolve(stdout.trim());
-            }
+            resolve(stdout ? stdout.trim() : "");
         });
     });
 };
 
-// 2. Pobieranie "Co teraz gra?" z Windowsa (PowerShell)
-// To działa bez instalowania dodatkowych bibliotek!
+//// 1. Sprawdzanie Sesji Mediów (Spotify, Chrome, Appki)
 const getWindowsMedia = async () => {
     const psScript = `
     $ErrorActionPreference = 'SilentlyContinue';
     [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media,ContentType=WindowsRuntime] | Out-Null;
     $g = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync().GetAwaiter().GetResult();
-    $s = $g.GetCurrentSession();
-    if($s){
-        $m = $s.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
-        $stat = $s.GetPlaybackInfo().PlaybackStatus.ToString();
-        @{Title=$m.Title; Artist=$m.Artist; Status=$stat} | ConvertTo-Json -Compress
-    } else {
-        @{Status="Stopped"} | ConvertTo-Json -Compress
+    
+    $sessions = $g.GetSessions();
+    $results = @();
+
+    foreach ($s in $sessions) {
+        $props = $s.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
+        $info = $s.GetPlaybackInfo();
+        
+        $item = @{
+            Type = "Session";
+            Title = $props.Title;
+            Artist = $props.Artist;
+            Status = $info.PlaybackStatus; # 4=Playing, 5=Paused
+        }
+        $results += $item;
     }
+    $results | ConvertTo-Json -Compress
     `;
     
-    // Trick na polskie znaki w konsoli Windows (chcp 65001)
-    const oneLiner = psScript.replace(/\s+/g, ' ').trim();
-    const command = `chcp 65001 >NUL & powershell -Command "${oneLiner}"`;
-
+    const command = `chcp 65001 >NUL & powershell -Command "${psScript.replace(/\s+/g, ' ').trim()}"`;
     try {
         const output = await runCommand(command);
-        const jsonStr = output.match(/\{.*\}/); 
-        if (jsonStr) {
-            return JSON.parse(jsonStr[0]);
+        const match = output.match(/\[.*\]|{.*}/);
+        if (match) {
+            const parsed = JSON.parse(match[0]);
+            return Array.isArray(parsed) ? parsed : [parsed];
         }
     } catch (e) {}
-    return { Title: "", Artist: "", Status: "Stopped" };
+    return [];
 };
 
+// 2. Metoda (NOWA - POPRAWIONA): Wykrywanie sprzętu "Linia A2DP"
+const getLineInStatus = async () => {
+    // Szukamy czegokolwiek co ma w nazwie A2DP, SNK, Linia lub MI 9
+    // Status="OK" oznacza, że sterownik działa poprawnie (jest połączony)
+    const psCmd = `Get-CimInstance Win32_PnPEntity | Where-Object { ($_.Name -match 'A2DP' -or $_.Name -match 'SNK' -or $_.Name -match 'Linia' -or $_.Name -match 'MI 9') -and $_.Status -eq 'OK' } | Select-Object Name, Description | ConvertTo-Json -Compress`;
+    
+    try {
+        const output = await runCommand(`powershell -Command "${psCmd}"`);
+        
+        if (output && output.includes("Name")) {
+            // Znaleziono!
+            let parsed;
+            try {
+                 parsed = JSON.parse(output);
+            } catch(e) {
+                // Czasem PowerShell zwraca dziwny format, fallback:
+                return "Urządzenie A2DP";
+            }
 
+            const device = Array.isArray(parsed) ? parsed[0] : parsed;
+            const name = device.Name || device.Description || "Nieznane urządzenie";
+            
+            // console.log(`✅ ZNALEZIONO SPRZĘT: ${name}`); // Debug
+            return name; 
+        }
+    } catch (e) {
+        console.error("Błąd skanowania PnP:", e);
+    }
+    return null;
+};
+
+// 3. Sprawdzanie statusu sprzętu Bluetooth (Windows)
+const getBluetoothHardwareStatus = async () => {
+    // Szukamy urządzenia, które ma w nazwie 'A2DP' (profil audio) i jest włączone (Status 'OK')
+    const psCmd = `Get-PnpDevice | Where-Object { $_.FriendlyName -like "*A2DP*" -and $_.Status -eq "OK" } | Select-Object FriendlyName | ConvertTo-Json -Compress`;
+    
+    try {
+        const output = await runCommand(`powershell -Command "${psCmd}"`);
+        if (output && output.includes("FriendlyName")) {
+            // Znaleziono aktywne urządzenie audio bluetooth!
+            // Wyciągamy nazwę (np. "Linia (MI 9 lite A2DP SNK)")
+            const json = JSON.parse(output);
+            const name = Array.isArray(json) ? json[0].FriendlyName : json.FriendlyName;
+            return name; 
+        }
+    } catch (e) {}
+    return null;
+};
 // --- 1. ENDPOINT POGODOWY (PEŁNA LOGIKA Z BAZĄ) ---
 
 app.get('/api/weather', async (req: Request, res: Response) => {
@@ -266,27 +313,117 @@ app.post('/api/bluetooth/connect', async (req: Request, res: Response) => {
     }
 });
 
+// --- STEROWANIE (WERSJA HARDWARE INPUT + VOLUME) ---
+app.post('/api/media/control', async (req: Request, res: Response) => {
+    const { action } = req.body; 
+    
+    if (!isWindows) return res.json({ status: "ignored" });
 
-// --- 5. SYSTEMOWE MEDIA (NOWOŚĆ - CO GRA?) ---
+    // Kody klawiszy wirtualnych (Virtual-Key Codes)
+    // 0xB3 = Play/Pause
+    // 0xB0 = Next
+    // 0xB1 = Prev
+    // 0xB2 = Stop
+    // 0xAD = Volume Mute
+    // 0xAE = Volume Down
+    // 0xAF = Volume Up
+    
+    let keyCode = "";
+    
+    // Media
+    if (action === 'playpause' || action === 'play' || action === 'pause') keyCode = "0xB3"; 
+    else if (action === 'next') keyCode = "0xB0";
+    else if (action === 'prev') keyCode = "0xB1";
+    else if (action === 'stop') keyCode = "0xB2";
+    
+    // Głośność (NOWOŚĆ)
+    else if (action === 'mute') keyCode = "0xAD";
+    else if (action === 'vol_down') keyCode = "0xAE";
+    else if (action === 'vol_up') keyCode = "0xAF";
 
-app.get('/api/media/now-playing', async (req: Request, res: Response) => {
-    if (isWindows) {
-        // Używa naszej funkcji bez npm!
-        const info = await getWindowsMedia();
-        // Statusy Windowsa: 4 = Playing, 5 = Paused
-        let isPlaying = info.Status === "Playing" || info.Status === "4"; 
+    if (keyCode) {
+        // console.log(`⏯️ Wysyłanie sygnału: ${action} (${keyCode})`);
+
+        const psScript = `
+        $code = @'
+        [DllImport("user32.dll")]
+        public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);
+        '@
+        $win32 = Add-Type -MemberDefinition $code -Name "Win32" -Namespace Win32 -PassThru
         
-        res.json({
-            title: info.Title || "Brak tytułu",
-            artist: info.Artist || "Nieznany",
-            status: isPlaying ? "Playing" : "Paused"
-        });
+        # Wciśnij
+        $win32::keybd_event(${keyCode}, 0, 0, 0)
+        # Puść
+        $win32::keybd_event(${keyCode}, 0, 2, 0)
+        `;
+
+        const command = `powershell -Command "${psScript.replace(/\r?\n/g, '; ')}"`;
+        await runCommand(command);
+        res.json({ status: "success" });
     } else {
-        // Linux Placeholder (można rozwinąć o 'playerctl' w przyszłości)
-        res.json({ title: "Brak danych (Linux)", artist: "", status: "Paused" });
+        res.json({ status: "error", message: "Unknown action" });
     }
 });
 
+
+// --- 5. SYSTEMOWE MEDIA (Endpoint zaktualizowany) ---
+// --- GŁÓWNA LOGIKA WYKRYWANIA ---
+app.get('/api/media/now-playing', async (req: Request, res: Response) => {
+    if (isWindows) {
+        // KROK 1: Sprawdź czy grają normalne aplikacje (Spotify)
+        const allSessions = await getWindowsMedia();
+        let activeSession = allSessions.find((s: any) => s.Status === 4);
+
+        if (activeSession) {
+            console.log(`🎵 Aplikacja: ${activeSession.Title}`);
+            return res.json({
+                title: activeSession.Title,
+                artist: activeSession.Artist,
+                status: "Playing"
+            });
+        }
+
+        // KROK 2: Jeśli nic nie gra, sprawdź czy telefon jest podłączony jako sprzęt
+        const lineDevice = await getLineInStatus();
+        
+        if (lineDevice) {
+            // Mamy podłączony telefon!
+            // Zakładamy że gra (bo jest połączony), tytułu nie znamy
+            return res.json({
+                title: "Audio Bluetooth", // Tytuł na sztywno
+                artist: lineDevice,       // Nazwa urządzenia z systemu
+                status: "Playing"         // Wymuszamy status Playing
+            });
+        }
+
+        // KROK 3: Cisza
+        res.json({ title: "", artist: "", status: "Paused" });
+
+    } else {
+        res.json({ title: "Linux", artist: "", status: "Paused" });
+    }
+});
+
+// --- DIAGNOSTYKA (Nowy Endpoint) ---
+// Wejdź tutaj, żeby zobaczyć co widzi system: http://localhost:8888/api/debug/devices
+app.get('/api/debug/devices', async (req, res) => {
+    if (!isWindows) return res.json({ msg: "Linux - brak debugu PnP" });
+    
+    // Pobiera WSZYSTKIE urządzenia zawierające słowa kluczowe
+    const cmd = `Get-CimInstance Win32_PnPEntity | Where-Object { $_.Name -match 'Bluetooth' -or $_.Name -match 'Audio' -or $_.Name -match 'A2DP' -or $_.Name -match 'MI 9' } | Select-Object Name, Status, Service | ConvertTo-Json`;
+    
+    try {
+        const output = await runCommand(`powershell -Command "${cmd}"`);
+        // Próba parsowania JSON, ale jak się nie uda to wyślij tekst
+        try {
+            res.json(JSON.parse(output));
+        } catch (e) {
+            res.send(`<pre>${output}</pre>`); // Wyświetl jako tekst
+        }
+    } catch(e: any) {
+        res.status(500).send(e.message);
+    }
+});
 
 // --- START SERWERA ---
 app.listen(PORT, () => {
@@ -294,4 +431,5 @@ app.listen(PORT, () => {
     console.log(`🔗 Frontend: http://localhost:${PORT}/vapage.html`);
     console.log(`📡 API Pogodowe: http://localhost:${PORT}/api/weather`);
     console.log(`💻 Tryb systemu: ${isWindows ? 'Windows 🪟' : 'Linux/Raspberry Pi 🍓'}`);
+    console.log(`🎵 Tryb diagnostyki mediów włączony.`);
 });
