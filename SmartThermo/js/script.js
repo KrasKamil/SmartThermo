@@ -207,21 +207,30 @@ async function getCurrentPlaybackState() {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
+        // --- KLUCZOWA ZMIANA ---
         if (res.status === 204) {
-            console.log("Spotify nieaktywne (otwórz aplikację na urządzeniu)");
+            // Brak aktywnego urządzenia - ukrywamy player, pokazujemy zachętę
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'block';
+            document.querySelector('#login-view p').innerText = "Otwórz Spotify na urządzeniu 📱";
             return;
         }
 
         if (res.status === 401) {
-            await refreshAccessToken(); // Token wygasł, odśwież go
+            await refreshAccessToken();
             return;
         }
 
         const data = await res.json();
+
+        // Jeśli dotarliśmy tutaj, znaczy że coś gra - pokazujemy player
+        document.getElementById('player-view').style.display = 'flex';
+        document.getElementById('login-view').style.display = 'none';
+
         updateWidgetUI(data);
 
     } catch (e) {
-        console.error("Błąd playera:", e);
+        console.error("Błąd połączenia ze Spotify:", e);
     }
 }
 
