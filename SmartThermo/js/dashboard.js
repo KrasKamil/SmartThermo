@@ -95,7 +95,6 @@ function initClock() {
     loadAppConfig(); // Pobierz konfigurację przy starcie
     updateClock();
     window.setInterval(updateClock, 1000);
-    window.setInterval(checkSystemMedia, 2000); //  Sprawdzaj media co 2 sekundy
     userAction(); // Pobierz pogodę przy starcie
 }
 
@@ -492,40 +491,8 @@ async function connectBluetooth(mac) {
     }
 }
 
-// --- 10. SPRAWDZANIE MEDIÓW SYSTEMOWYCH (Bluetooth) ---
-async function checkSystemMedia() {
-    try {
-        const res = await fetch('http://localhost:8888/api/media/now-playing');
-        const data = await res.json();
 
-        if (data.status === 'Playing') {
-
-            // --- POPRAWIONA LOGIKA PRIORYTETÓW ---
-
-            // 1. Jeśli Radio GRA, to ono ma pierwszeństwo. 
-            // Ignorujemy Bluetooth, żeby nie podmieniał napisów w trakcie słuchania stacji.
-            if (activeSource === 'radio' && isRadioPlaying) {
-                return;
-            }
-
-            // 2. Jeśli Radio NIE GRA (jest pauza) lub źródłem jest co innego -> Pokaż Bluetooth.
-            // Dzięki temu jak zapauzujesz radio i puścisz muzykę z telefonu, player się zaktualizuje.
-            updateMiniPlayer(data.title, data.artist, 'system');
-
-            if (lastTrackTitle !== data.title) {
-                lastTrackTitle = data.title;
-                // console.log("🎵 Wykryto sprzęt/muzykę:", data.title);
-            }
-
-        } else if (activeSource === 'system') {
-            updateMiniPlayerState(false);
-            document.getElementById('mini-subtitle').innerText = "Wstrzymano (System)";
-        }
-    } catch (e) {
-        // cicho sza
-    }
-}
-// --- 11. STEROWANIE GŁOŚNOŚCIĄ ---
+// --- 10. STEROWANIE GŁOŚNOŚCIĄ ---
 
 function controlVolume(action) {
     // Efekt kliknięcia (opcjonalny, dla lepszego UX)

@@ -121,8 +121,14 @@ function process(rawText) {
     } else if (text.includes("stop") || text.includes("bye")) {
         response = "Bye!";
     } else if (text.includes("play")) {
-        response = "Searching on YouTube...";
-        window.open(`https://www.youtube.com/results?search_query=${rawText.replace("play", "")}`, "_blank");
+        controlSystemMedia('playpause'); // Wywołuje nową funkcję sterującą
+        return "Playing music...";
+    } else if (text.includes("pause")) {
+        controlSystemMedia('playpause');
+        return "Pausing...";
+    } else if (text.includes("next")) {
+        controlSystemMedia('next');
+        return "Next track...";
     } else if (text.includes("radio")) {
         response = "Turning on the radio...";
         openRadioPopup();
@@ -152,155 +158,138 @@ function readOutLoud(message) {
     if (voices.length > 0) speech.voice = voices[0];
     window.speechSynthesis.speak(speech);
 }
-// --- SPOTIFY INTEGRATION (Best Practices) ---
+// --- SYSTEM MEDIA INTEGRATION (Obsługa Spotify, Bluetooth i Windows Media) ---
 
-const SPOTIFY_CONFIG = {
-    apiBase: 'https://api.spotify.com/v1/me/player',
-    backendUrl: window.location.origin // Dynamicznie bierze localhost:8888
-};
-
-let accessToken = null;
-let refreshToken = null;
-
-// Funkcja startowa
+// 1. START - Uruchomienie po załadowaniu
 window.addEventListener('load', () => {
-    // 1. Sprawdź czy wracamy z autoryzacji (hash w URL)
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const tokenParams = params.get('access_token');
-    const refreshParams = params.get('refresh_token');
+    // Ukryj stary przycisk logowania (zbędny)
+    const loginLink = document.querySelector('#login-view a');
+    if (loginLink) loginLink.style.display = 'none';
 
-    if (tokenParams) {
-        // Zapisz tokeny w pamięci (lub localStorage jeśli wolisz trwałość między odświeżeniami)
-        accessToken = tokenParams;
-        refreshToken = refreshParams;
+    // Pętla sprawdzania co 3 sekundy
+    setInterval(checkSystemMedia, 3000);
+    checkSystemMedia();
 
-        // Wyczyść URL dla estetyki
-        window.history.pushState({}, document.title, window.location.pathname);
+    // Podpięcie sterowania (przyciski ekranowe sterują teraz systemem Windows/Telefonem)
+    const playBtn = document.getElementById('play-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
 
-        // Pokaż player
-        activatePlayerUI();
-    }
+    if (playBtn) playBtn.onclick = () => controlSystemMedia('playpause');
+    if (nextBtn) nextBtn.onclick = () => controlSystemMedia('next');
+    if (prevBtn) prevBtn.onclick = () => controlSystemMedia('prev');
 });
 
-function activatePlayerUI() {
-    document.getElementById('login-view').style.display = 'none';
-    document.getElementById('player-view').style.display = 'flex';
-
-    // Pobierz stan odtwarzania od razu
-    getCurrentPlaybackState();
-
-    // Odświeżaj co 5 sekund
-    setInterval(getCurrentPlaybackState, 5000);
-
-    // Obsługa przycisków
-    document.getElementById('play-btn').onclick = () => togglePlayback();
-    document.getElementById('next-btn').onclick = () => controlSpotify('next');
-    document.getElementById('prev-btn').onclick = () => controlSpotify('previous');
-}
-
-// Pobieranie stanu (co leci?)
-async function getCurrentPlaybackState() {
-    if (!accessToken) return;
-
+// 2. GŁÓWNA FUNKCJA SPRAWDZAJĄCA
+async function checkSystemMedia() {
     try {
-        const res = await fetch(SPOTIFY_CONFIG.apiBase, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-
-        // --- KLUCZOWA ZMIANA ---
-        if (res.status === 204) {
-            // Brak aktywnego urządzenia - ukrywamy player, pokazujemy zachętę
-            document.getElementById('player-view').style.display = 'none';
-            document.getElementById('login-view').style.display = 'block';
-            document.querySelector('#login-view p').innerText = "Otwórz Spotify na urządzeniu 📱";
-            return;
-        }
-
-        if (res.status === 401) {
-            await refreshAccessToken();
-            return;
-        }
+        const res = await fetch('/api/media/now-playing');
+        if (!res.ok) return;
 
         const data = await res.json();
+        // Oczekujemy: { title, artist, status }
 
-        // Jeśli dotarliśmy tutaj, znaczy że coś gra - pokazujemy player
-        document.getElementById('player-view').style.display = 'flex';
-        document.getElementById('login-view').style.display = 'none';
+        // --- WAŻNE: LOGIKA PRIORYTETÓW ---
+        // Zmienne 'activeSource' i 'isRadioPlaying' pochodzą z dashboard.js (są globalne).
+        // Jeśli użytkownik włączył Radio Internetowe w naszej apce, nie chcemy, 
+        // żeby Spotify w tle nadpisywało pasek "Mini Player".
+        if (typeof activeSource !== 'undefined' && activeSource === 'radio' && isRadioPlaying) {
+            // Radio gra -> ignorujemy aktualizację Mini Playera z systemu.
+            // Ale możemy zaktualizować duży widget (jeśli jest otwarty), żeby widzieć co gra w tle.
+            updateMainPlayerOnly(data);
+            return;
+        }
 
-        updateWidgetUI(data);
-
+        // Jeśli nic nie gra w systemie (puste dane)
+        if (!data.title && !data.artist) {
+            hidePlayer();
+        } else {
+            // Gra system (Spotify lub Bluetooth) -> Pokazujemy
+            showPlayer(data);
+        }
     } catch (e) {
-        console.error("Błąd połączenia ze Spotify:", e);
+        console.error("Błąd checkSystemMedia:", e);
+        hidePlayer();
     }
 }
 
-// Aktualizacja wyglądu
-function updateWidgetUI(data) {
-    if (!data || !data.item) return;
+// 3. POKAZYWANIE PLAYERA (ZIMNE KOLORY DLA BT, ZIELONE DLA SPOTIFY)
+function showPlayer(data) {
+    const playerView = document.getElementById('player-view');
+    const loginView = document.getElementById('login-view');
 
-    const track = data.item;
-    document.getElementById('current-track').innerText = track.name;
-    document.getElementById('current-artist').innerText = track.artists.map(a => a.name).join(', ');
-    document.getElementById('current-art').src = track.album.images[0].url;
+    if (playerView) playerView.style.display = 'flex';
+    if (loginView) loginView.style.display = 'none';
 
+    // Ustawienie tekstów w dużym widgecie
+    setText('current-track', data.title || "Nieznany utwór");
+    setText('current-artist', data.artist || "Nieznany artysta");
+
+    // Przycisk Play/Pause
     const playBtn = document.getElementById('play-btn');
-    playBtn.innerText = data.is_playing ? '⏸' : '▶️';
+    if (playBtn) playBtn.innerText = (data.status === 'Playing') ? '⏸' : '▶️';
 
-    // Aktualizacja mini playera
-    // [NOWOŚĆ] Aktualizuj Mini Player pod zegarem
-    if (data.is_playing) {
-        // Jeśli gra, pokaż info
+    // --- DETEKCJA ŹRÓDŁA (Ikona i Kolor) ---
+    // Server.ts zwraca "Audio Bluetooth" dla Line-in, a normalne tytuły dla Spotify.
+    const isBluetooth = (data.title === "Audio Bluetooth");
+    const artEl = document.getElementById('current-art');
+
+    if (artEl) {
+        // Podmień ikonę: Spotify (zielona nuta/logo) vs Bluetooth (sygnał/radio)
+        artEl.src = isBluetooth ? "style-css/icon.svg" : "style-css/spotify.png";
+    }
+
+    // Aktualizacja Mini Playera (pod zegarem)
+    if (typeof updateMiniPlayer === 'function') {
+        // Typ 'spotify' daje zielony pasek, typ 'radio' daje niebieski.
+        // Dla Bluetooth używamy 'radio' (bo to zewnętrzne źródło), dla Spotify 'spotify'.
+        let type = isBluetooth ? 'radio' : 'spotify';
+        updateMiniPlayer(data.title, data.artist, type);
+    }
+}
+
+// Funkcja pomocnicza: Aktualizuje tylko duży widget (nie dotyka paska pod zegarem)
+function updateMainPlayerOnly(data) {
+    setText('current-track', data.title || "");
+    setText('current-artist', data.artist || "");
+    const artEl = document.getElementById('current-art');
+    const isBluetooth = (data.title === "Audio Bluetooth");
+    if (artEl) artEl.src = isBluetooth ? "style-css/icon.svg" : "style-css/spotify.png";
+}
+
+// 4. UKRYWANIE
+function hidePlayer() {
+    const playerView = document.getElementById('player-view');
+    const loginView = document.getElementById('login-view');
+
+    if (playerView) playerView.style.display = 'none';
+    if (loginView) {
+        loginView.style.display = 'block';
+        const p = loginView.querySelector('p');
+        if (p) p.innerText = "System gotowy. Włącz muzykę 🎵";
+    }
+
+    // Ukryj Mini Player (tylko jeśli nie gra Radio!)
+    if (typeof activeSource !== 'undefined' && activeSource !== 'radio') {
         if (typeof updateMiniPlayer === 'function') {
-            updateMiniPlayer(track.name, track.artists[0].name, "spotify");
+            updateMiniPlayer("", "", "none");
         }
-    } else {
-        // Opcjonalnie: Ukryj jeśli pauza, albo zostaw ostatni utwór
-        // updateMiniPlayer(track.name, "Wstrzymano", "spotify");
     }
-
 }
 
-// Sterowanie (Play, Pause, Next, Prev)
-async function controlSpotify(command) {
-    if (!accessToken) return;
+// 5. WYSYŁANIE KOMEND
+async function controlSystemMedia(action) {
     try {
-        await fetch(`${SPOTIFY_CONFIG.apiBase}/${command}`, {
+        await fetch('/api/media/control', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${accessToken}` }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action })
         });
-        setTimeout(getCurrentPlaybackState, 500); // Szybkie odświeżenie UI
+        setTimeout(checkSystemMedia, 500);
     } catch (e) { console.error(e); }
 }
 
-async function togglePlayback() {
-    // Sprawdź czy gra, żeby wiedzieć czy wysłać play czy pause
-    // (Uproszczona logika - lepiej pobrać stan, ale API endpointy są różne: /play i /pause)
-    const btn = document.getElementById('play-btn');
-    const isPlaying = btn.innerText === '⏸';
-    const endpoint = isPlaying ? 'pause' : 'play';
-
-    try {
-        await fetch(`${SPOTIFY_CONFIG.apiBase}/${endpoint}`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        setTimeout(getCurrentPlaybackState, 500);
-    } catch (e) { console.error(e); }
-}
-
-// Odświeżanie tokenu przez Backend
-async function refreshAccessToken() {
-    if (!refreshToken) return;
-
-    try {
-        const res = await fetch(`/refresh_token?refresh_token=${refreshToken}`);
-        const data = await res.json();
-        if (data.access_token) {
-            accessToken = data.access_token;
-            console.log("Token odświeżony!");
-            getCurrentPlaybackState(); // Ponów próbę
-        }
-    } catch (e) {
-        console.error("Nie udało się odświeżyć tokenu", e);
-    }
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
 }
