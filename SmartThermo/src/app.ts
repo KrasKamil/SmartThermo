@@ -1,24 +1,50 @@
+// src/app.ts
 import express from "express";
-const cors = require("cors");
+import cors from "cors";
+import path from "path";
 
-import routes from "./routes";
+// Importy modułów
+import weatherRoutes from './routes/weather';
+import spotifyRoutes from './routes/spotify';
+import bluetoothRoutes from './routes/bluetooth';
+import mediaRoutes from './routes/media';
+import debugRoutes from './routes/debug';
 
 class App {
-  public server;
+  public server: express.Application;
 
   constructor() {
     this.server = express();
-
-    this.middlewares();
+    this.middlewares(); // Tutaj ładujemy logger
     this.routes();
   }
 
   middlewares() {
+    this.server.use(cors());
     this.server.use(express.json());
+    
+    // --- DODAJ TEN FRAGMENT (LOGGER) ---
+    this.server.use((req, res, next) => {
+        const start = Date.now();
+        res.on('finish', () => {
+            const duration = Date.now() - start;
+            // Kolorowanie statusów (zielony ok, czerwony błąd)
+            const statusIcon = res.statusCode >= 400 ? '❌' : '✅';
+            console.log(`📝 ${statusIcon} [${req.method}] ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+        });
+        next();
+    });
+    // ------------------------------------
+
+    this.server.use(express.static(path.join(__dirname, '../')));
   }
 
   routes() {
-    this.server.use(routes);
+    this.server.use('/api/weather', weatherRoutes);
+    this.server.use('/', spotifyRoutes);
+    this.server.use('/api/bluetooth', bluetoothRoutes);
+    this.server.use('/api', mediaRoutes); // Uwaga: mediaRoutes ma w sobie ścieżki /media/...
+    this.server.use('/api/debug', debugRoutes); 
   }
 }
 

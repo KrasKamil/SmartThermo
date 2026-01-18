@@ -204,7 +204,16 @@
         #naglowek {
             width: 100%;
             text-align: center;
+            #player-view {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                transition: opacity 0.5s ease-in-out;
+                /* Płynne pojawianie się */
+            }
             margin-bottom: 10px;
+            font-size: 20px;
+            font-weight: bold;
         }
         
         h1 {
@@ -719,5 +728,128 @@
         @media (max-width: 400px) {
             #mini-anim {
                 display: none;
+            }
+        }
+        /* --- USTAWIENIA (Szary) --- */
+        
+        #settings-button {
+            position: fixed;
+            left: 15px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            background-color: #555;
+            /* Szary */
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+        
+        #settings-button:hover {
+            transform: scale(1.15);
+            background-color: #777;
+        }
+        /* Styl listy bluetooth */
+        
+        .bt-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .bt-item button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .bt-item button:hover {
+            background: #45a049;
+        }
+        /* =========================================
+   RESPONSYWNOŚĆ (MEDIA QUERIES)
+   ========================================= */
+        
+        @media (max-width: 950px) {
+            /* 1. ZMIANA KOLEJNOŚCI ELEMENTÓW */
+            #kontener {
+                flex-direction: column;
+                /* Układamy elementy jeden pod drugim */
+                align-items: center;
+                /* Centrujemy je */
+            }
+            /* Nagłówek "Smart Thermostat" zawsze na samej górze */
+            #naglowek {
+                order: 1;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            /* Kolumna z Zegarem i Playerem (to jest druga .kolumna w HTML) */
+            /* Przenosimy ją WYŻEJ (pod nagłówek) */
+            .kolumna:nth-of-type(2) {
+                order: 2;
+                width: 100%;
+                margin-bottom: 30px;
+                /* Odstęp od pogody */
+            }
+            /* Kolumna z Pogodą (to jest pierwsza .kolumna w HTML) */
+            /* Przenosimy ją NIŻEJ (na sam dół) */
+            .kolumna:nth-of-type(1) {
+                order: 3;
+                width: 100%;
+            }
+            /* 2. ZMNIEJSZENIE TABELI POGODOWEJ */
+            .weather-card {
+                padding: 15px;
+                /* Mniejszy odstęp wewnętrzny karty */
+                width: 95%;
+                /* Niech zajmuje prawie całą szerokość ekranu */
+                max-width: 100%;
+                /* Zdejmujemy sztywne ograniczenie */
+                margin: 0 auto;
+                /* Centrowanie */
+            }
+            .styled-table td {
+                padding: 8px 10px;
+                /* Mniejsze komórki */
+                font-size: 14px;
+                /* Nieco mniejsza czcionka */
+            }
+            /* Zmniejszenie przycisku Update, żeby pasował do tabeli */
+            #updateBtn {
+                padding: 10px;
+                font-size: 14px;
+                width: 95%;
+            }
+            /* Dostosowanie Zegara, żeby nie był za szeroki na telefonie */
+            .datetime {
+                min-width: auto;
+                /* Resetujemy minimalną szerokość */
+                width: 95%;
+                /* Dopasowanie do ekranu */
+                padding: 10px;
+            }
+            .time {
+                font-size: 50px;
+                /* Mniejsza godzina na telefonie */
+            }
+            /* Dostosowanie Mini Playera */
+            .media-info {
+                min-width: auto;
+                width: 95%;
+                margin: 20px auto 0 auto;
             }
         }

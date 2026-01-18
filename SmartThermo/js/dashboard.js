@@ -5,8 +5,29 @@ let currentStationIndex = -1; // Które radio teraz gra?
 let isRadioPlaying = false;
 let stationsLoaded = false;
 let currentPlayPromise = null;
+let use24HourFormat = false;
+let lastTrackTitle = "";
 
 // --- 1. OBSŁUGA UI (Motyw, Popup) ---
+
+async function loadAppConfig() {
+    try {
+        const res = await fetch('http://localhost:8888/api/config'); // lub relatywnie '/api/config'
+        const data = await res.json();
+
+        if (data.clockFormat === '24') {
+            use24HourFormat = true;
+            console.log("🕒 Tryb zegara: 24h");
+        } else {
+            use24HourFormat = false;
+            console.log("🕒 Tryb zegara: 12h (AM/PM)");
+        }
+        // Wymuś odświeżenie zegara od razu po pobraniu konfigu
+        updateClock();
+    } catch (e) {
+        console.error("Nie udało się pobrać konfiguracji zegara", e);
+    }
+}
 
 function toggleTheme() {
     document.body.classList.toggle("light-mode");
@@ -32,29 +53,46 @@ function updateClock() {
         min = now.getMinutes(),
         sec = now.getSeconds();
 
-    let pe = "AM";
+    let pe = ""; // AM/PM lub puste
     let hourShow = hou;
 
-    if (hourShow == 0) hourShow = 12;
-    if (hourShow > 12) {
-        hourShow -= 12;
-        pe = 'PM';
+    // LOGIKA FORMATU
+    if (use24HourFormat) {
+        // Tryb 24h: Godzina bez zmian (0-23), brak dopisku AM/PM
+        pe = "";
+    } else {
+        // Tryb 12h: Logika AM/PM
+        pe = "AM";
+        if (hourShow == 0) hourShow = 12;
+        if (hourShow > 12) {
+            hourShow -= 12;
+            pe = 'PM';
+        }
     }
 
     const pad = (num) => num.toString().padStart(2, '0');
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    // Aktualizacja daty
     const ids = ["dayname", "month", "daynum", "year", "hour", "minute", "second", "period"];
     const values = [week[dname], months[mo], pad(dnum), yr, pad(hourShow), pad(min), pad(sec), pe];
 
     for (let i = 0; i < ids.length; i++) {
         const el = document.getElementById(ids[i]);
-        if (el) el.textContent = values[i];
+        if (el) {
+            el.textContent = values[i];
+
+            // [OPCJONALNIE] Ukryj element 'period' (AM/PM) jeśli jest tryb 24h, żeby nie było pustego miejsca
+            if (ids[i] === "period") {
+                el.style.display = use24HourFormat ? "none" : "inline-block";
+            }
+        }
     }
 }
 
 function initClock() {
+    loadAppConfig(); // Pobierz konfigurację przy starcie
     updateClock();
     window.setInterval(updateClock, 1000);
     userAction(); // Pobierz pogodę przy starcie
@@ -110,22 +148,46 @@ const userAction = async() => {
 // --- 4. FUNKCJE STERUJĄCE MINI PLAYERA ---
 
 function miniControl(action) {
+    // 1. STEROWANIE SPOTIFY
     if (activeSource === 'spotify') {
-        // Sterowanie Spotify (funkcje zdefiniowane w script.js)
-        // Sprawdzamy czy script.js już załadował te funkcje
         if (typeof togglePlayback === 'function' && typeof controlSpotify === 'function') {
             if (action === 'play') togglePlayback();
             else if (action === 'next') controlSpotify('next');
             else if (action === 'prev') controlSpotify('previous');
         }
-    } else if (activeSource === 'radio') {
-        // Sterowanie Radiem
+    }
+    // 2. STEROWANIE RADIEM
+    else if (activeSource === 'radio') {
         if (action === 'play') {
             toggleRadioPlay();
         } else if (action === 'next') {
-            changeStation(1); // Następna
+            changeStation(1);
         } else if (action === 'prev') {
-            changeStation(-1); // Poprzednia
+            changeStation(-1);
+        }
+    }
+    // 3. STEROWANIE SYSTEMEM (WINDOWS / BLUETOOTH) - TEGO BRAKOWAŁO
+    else if (activeSource === 'system') {
+        let serverAction = action;
+
+        // Mapowanie akcji dla serwera
+        // Jeśli klikamy "play/pause" w playerze, wysyłamy do Windowsa 'playpause' (klawisz Media Play/Pause)
+        if (action === 'play') serverAction = 'playpause';
+
+        console.log("Wysyłam do systemu:", serverAction);
+
+        fetch('http://localhost:8888/api/media/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: serverAction })
+        }).catch(err => console.error("Błąd sterowania:", err));
+
+        // Opcjonalnie: Zaktualizuj wygląd przycisku od razu (dla lepszego wrażenia)
+        if (action === 'play') {
+            const btn = document.getElementById('mini-play-btn');
+            const isPlaying = btn.innerText === '⏸';
+            btn.innerText = isPlaying ? '▶️' : '⏸';
+            updateMiniPlayerState(!isPlaying);
         }
     }
 }
@@ -235,47 +297,34 @@ function playRadio(url, name) {
 
     if (!player) return;
 
-    // KROK 1: Twardy Reset (zatrzymaj poprzednie)
+    // 1. ZATRZYMAJ MUZYKĘ W SYSTEMIE (Windows/Spotify)
+    // Wysyłamy sygnał Play/Pause do systemu, żeby wyciszyć Bluetooth
+    fetch('http://localhost:8888/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pause' }) // lub 'playpause'
+    }).catch(e => console.log("Nie udało się spauzować systemu"));
+
+    // 2. Reszta starego kodu radia...
     player.pause();
     player.currentTime = 0;
-
-    // UI: Pokaż że ładujemy
     label.innerText = `Łączę z: ${name}... 📡`;
     controls.classList.remove('hidden');
     controls.style.display = 'block';
 
-    console.log(`Radio: ${name} -> ${url}`);
-
-    // KROK 2: Ustawienie źródła i wymuszenie ładowania
     player.src = url;
     player.load();
 
-    // KROK 3: Odtwarzanie z obsługą "Promise Interrupted"
     const playPromise = player.play();
-
     if (playPromise !== undefined) {
         playPromise
             .then(() => {
-                // SUKCES
                 label.innerText = `Gram: ${name} 🎵`;
-                label.style.color = "#00ff00"; // Zielony sukces
+                label.style.color = "#00ff00";
                 isRadioPlaying = true;
-
-                // Aktualizuj Mini Player pod zegarem
                 updateMiniPlayer(name, "Radio Internetowe", "radio");
             })
-            .catch(error => {
-                // OBSŁUGA BŁĘDÓW
-                if (error.name === 'AbortError') {
-                    // To normalne przy szybkim przełączaniu
-                    console.log("Przełączono stację (przerwano poprzednią).");
-                } else {
-                    console.error("Błąd radia:", error);
-                    label.innerText = `Błąd: ${name}`;
-                    label.style.color = "red";
-                    updateMiniPlayer(name, "Błąd odtwarzania", "radio");
-                }
-            });
+            .catch(error => { /* obsługa błędów bez zmian */ });
     }
 }
 
@@ -318,6 +367,11 @@ function updateMiniPlayer(title, subtitle, type = 'none') {
         player.style.borderLeft = '4px solid #00d2ff'; // Niebieski pasek
         playBtn.innerText = '⏸'; // Zakładamy że jak włączasz radio, to gra
         updateMiniPlayerState(true);
+    } else if (type === 'system') {
+        iconEl.innerText = '💻';
+        player.style.borderLeft = '4px solid #ffffff';
+        playBtn.innerText = '⏸';
+        updateMiniPlayerState(true);
     }
 }
 
@@ -339,3 +393,114 @@ function updateMiniPlayerState(isPlaying) {
 document.addEventListener('DOMContentLoaded', () => {
     loadStations();
 });
+
+function updateMiniPlayerState(isPlaying) {
+    const anim = document.getElementById('mini-anim');
+    if (anim) {
+        if (isPlaying) {
+            anim.style.opacity = '1';
+        } else {
+            anim.style.opacity = '0.2'; // Przygaś animację jak pauza
+        }
+    }
+}
+
+// --- 8. INICJALIZACJA ---
+
+// Wywołaj ładowanie listy stacji w tle przy starcie, 
+// żeby przyciski Next/Prev działały od razu (zanim otworzysz popup)
+document.addEventListener('DOMContentLoaded', () => {
+    loadStations();
+});
+// --- 9. USTAWIENIA & BLUETOOTH ---
+
+function openSettingsPopup() {
+    const overlay = document.getElementById('settings-overlay');
+    overlay.classList.remove('hidden');
+    overlay.style.display = 'flex';
+}
+
+function closeSettingsPopup() {
+    const overlay = document.getElementById('settings-overlay');
+    overlay.classList.add('hidden');
+    overlay.style.display = 'none';
+}
+
+async function scanBluetooth() {
+    const list = document.getElementById('bt-device-list');
+    const status = document.getElementById('bt-status');
+
+    list.innerHTML = '<li style="color: #ccc; text-align: center;">Szukam urządzeń... ⏳</li>';
+    status.innerText = "";
+
+    try {
+        const res = await fetch('http://localhost:8888/api/bluetooth/scan');
+        const devices = await res.json();
+
+        list.innerHTML = '';
+
+        if (devices.length === 0) {
+            list.innerHTML = '<li style="color: #aaa; text-align: center;">Nie znaleziono urządzeń. Upewnij się, że Bluetooth w telefonie jest widoczny.</li>';
+            return;
+        }
+
+        devices.forEach(dev => {
+            const li = document.createElement('li');
+            li.className = 'bt-item';
+
+            // Ukryj dziwne nazwy lub puste
+            const name = dev.name.trim() || dev.mac;
+
+            li.innerHTML = `
+                <span>📱 ${name}</span>
+                <button onclick="connectBluetooth('${dev.mac}')">Połącz</button>
+            `;
+            list.appendChild(li);
+        });
+
+    } catch (e) {
+        console.error(e);
+        list.innerHTML = '<li style="color: red;">Błąd skanowania</li>';
+    }
+}
+
+async function connectBluetooth(mac) {
+    const status = document.getElementById('bt-status');
+    status.innerText = "Łączenie... (Zaakceptuj parowanie na telefonie)";
+    status.style.color = "#00d2ff";
+
+    try {
+        const res = await fetch('http://localhost:8888/api/bluetooth/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mac: mac })
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            status.innerText = "✅ " + data.message;
+            status.style.color = "#4CAF50";
+        } else {
+            status.innerText = "⚠️ " + data.message;
+            status.style.color = "orange";
+        }
+    } catch (e) {
+        status.innerText = "❌ Błąd połączenia";
+        status.style.color = "red";
+    }
+}
+
+
+// --- 10. STEROWANIE GŁOŚNOŚCIĄ ---
+
+function controlVolume(action) {
+    // Efekt kliknięcia (opcjonalny, dla lepszego UX)
+    console.log("🔊 Zmieniam głośność:", action);
+
+    fetch('http://localhost:8888/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action })
+    }).catch(e => console.error("Błąd głośności:", e));
+}

@@ -55,6 +55,38 @@
         </div>
     </div>
 
+    <div id="settings-overlay" class="hidden" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); justify-content: center; align-items: center;">
+        <div class="glass-effect" style="padding: 30px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
+            <button class="close-btn" onclick="closeSettingsPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+
+            <h2 style="margin-bottom: 20px; color: #fff;">Ustawienia Systemu ⚙️</h2>
+            <div style="border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 style="color: #00d2ff; margin-bottom: 10px;">Głośność 🔊</h3>
+                <div style="display: flex; justify-content: center; gap: 15px;">
+                    <button onclick="controlVolume('vol_down')" style="background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">➖</button>
+
+                    <button onclick="controlVolume('mute')" style="background: rgba(255, 50, 50, 0.3); border: 1px solid #ff5555; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">🔇</button>
+
+                    <button onclick="controlVolume('vol_up')" style="background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">➕</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
+                <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
+
+                <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
+                🔍 Skanuj urządzenia
+            </button>
+
+                <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
+                </ul>
+
+                <p id="bt-status" style="margin-top: 10px; font-weight: bold; color: #fff; text-align: center;"></p>
+            </div>
+        </div>
+    </div>
+
     <div id="voice-overlay" class="hidden">
         <div class="voice-box glass-effect">
             <div class="pulse-ring"></div>
@@ -75,13 +107,16 @@
         <button id="radio-button" onclick="openRadioPopup()">
             📻
         </button>
+        <button id="settings-button" onclick="openSettingsPopup()" style="top: 280px;">
+            ⚙️
+        </button>
 
         <button id="voiceBtn">
             🎙️
         </button>
 
         <div id="naglowek">
-            <h1>Smart Thermostat</h1>
+            <h1>Smart Thermo</h1>
         </div>
 
         <div class="kolumna">
