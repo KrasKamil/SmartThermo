@@ -40,12 +40,12 @@ class App {
   }
 
   routes() {
-    this.server.use('/api/weather', weatherRoutes);
-    this.server.use('/', spotifyRoutes);
-    this.server.use('/api/bluetooth', bluetoothRoutes);
-    this.server.use('/api', mediaRoutes); // Uwaga: mediaRoutes ma w sobie ścieżki /media/...
-    this.server.use('/api/debug', debugRoutes); 
-  }
+  this.server.use('/api/weather', weatherRoutes); // To odpowiada za /api/weather
+  this.server.use('/api/bluetooth', bluetoothRoutes);
+  this.server.use('/api', mediaRoutes); // Jeśli media.ts ma w sobie /media/now-playing, to będzie /api/media/now-playing
+  this.server.use('/', spotifyRoutes); 
+  this.server.use('/api/debug', debugRoutes); 
+}
 }
 
 export default new App().server;

@@ -1,11 +1,10 @@
 // src/routes/weather.ts
 import { Router, Request, Response } from 'express';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ServerApiVersion } from 'mongodb';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
-    // 1. Pobieramy zmienną środowiskową
     const MONGO_URL = process.env.MONGO_URL || "";
     
     // Ukrywamy hasło do logów
@@ -28,13 +27,17 @@ router.get('/', async (req: Request, res: Response) => {
 
     console.log(`🔌 Próba połączenia z: ${maskedUrl}`);
 
-    // Dodatkowe opcje dla stabilności połączenia
+    // KONFIGURACJA DLA MONGODB 6.0+ (Czysta, bez starych flag)
     const client = new MongoClient(MONGO_URL, {
-        useNewUrlParser: true, 
-        useUnifiedTopology: true,
-        connectTimeoutMS: 5000, // Timeout po 5 sekundach
-        family: 4 // Wymuś IPv4 (czasem pomaga na błędy sieciowe)
-    } as any);
+        serverApi: {
+            version: ServerApiVersion.v1,
+            strict: true,
+            deprecationErrors: true,
+        },
+        connectTimeoutMS: 5000,         // Timeout połączenia TCP
+        serverSelectionTimeoutMS: 5000, // Timeout szukania serwerów (Ważne przy błędach SRV!)
+        family: 4                       // Wymuszenie IPv4 (pomaga na błędy DNS)
+    });
 
     try {
         await client.connect();
@@ -64,8 +67,10 @@ router.get('/', async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("❌ BŁĄD MONGODB:", error.message);
-        if (error.message.includes("querySrv")) {
-            console.error("💡 PODPOWIEDŹ: Twoja sieć blokuje zapytania SRV. Zmień link na 'mongodb://' (bez srv) lub zmień DNS na 8.8.8.8");
+        // Jeśli nadal widzisz ten błąd, to znaczy że Twój DNS blokuje rekordy SRV
+        if (error.message.includes("querySrv") || error.message.includes("ECONNREFUSED")) {
+            console.error("🚨 KRYTYCZNY BŁĄD DNS: Twój system nie może rozwiązać adresu mongodb+srv.");
+            console.error("👉 ROZWIĄZANIE: Zmień DNS w Windowsie na 8.8.8.8 (Google)");
         }
         res.json(offlineData);
     } finally {
