@@ -1,0 +1,62 @@
+.datetime {
+    color: #fff;
+    background: #10101E;
+    padding: 20px;
+    border: 3px solid #2E94E3;
+    border-radius: 15px;
+    transition: 0.3s;
+    min-width: 350px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.datetime:hover {
+    background: #2E94E3;
+    box-shadow: 0 0 30px #2E94E3;
+}
+
+.date {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.time {
+    font-size: 65px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.time span:not(:last-child) {
+    position: relative;
+    margin: 0 2px;
+    font-weight: 600;
+}
+
+.time span:last-child {
+    background: #2E94E3;
+    font-size: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 10px;
+    padding: 5px 8px;
+    border-radius: 5px;
+    vertical-align: middle;
+}
+
+
+/* Responsywność Zegara */
+
+@media (max-width: 950px) {
+    .datetime {
+        min-width: auto;
+        width: 95%;
+        padding: 10px;
+    }
+    .time {
+        font-size: 50px;
+    }
+}

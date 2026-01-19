@@ -1,0 +1,20 @@
+/* style-css/main.css */
+
+
+/* 1. Klasy pomocnicze i reset */
+
+@import 'modules/base.css';
+@import 'modules/utilities.css';
+
+/* 2. Układ strony */
+
+@import 'modules/layout.css';
+
+/* 3. Komponenty */
+
+@import 'modules/sidebar.css';
+@import 'modules/weather.css';
+@import 'modules/clock.css';
+@import 'modules/player.css';
+@import 'modules/radio.css';
+@import 'modules/popups.css';

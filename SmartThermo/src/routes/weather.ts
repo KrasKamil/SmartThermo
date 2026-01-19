@@ -57,7 +57,7 @@ router.get('/', async (req: Request, res: Response) => {
                 pressure: result.pressure || "-",
                 temp_out: result.temp_out || "-",
                 wind: result.wind || "-",
-                due_date: result.date || result.timestamp || new Date().toLocaleString()
+                due_date: result.due_date || result.date || result.timestamp || new Date().toLocaleString()
             };
             res.json(mappedData);
         } else {

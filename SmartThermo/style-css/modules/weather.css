@@ -1,0 +1,70 @@
+.weather-card {
+    padding: 25px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 450px;
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    color: white;
+}
+
+.styled-table td {
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.styled-table td:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    font-weight: bold;
+    color: #2E94E3;
+}
+
+.styled-table td:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    text-align: right;
+}
+
+#updateBtn {
+    width: 100%;
+    max-width: 450px;
+    background-image: linear-gradient(to right, #2927ad, #2E94E3);
+    border: none;
+    color: white;
+    padding: 15px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+}
+
+#updateBtn:hover {
+    transform: translateY(-2px);
+}
+
+
+/* Responsywność Pogody */
+
+@media (max-width: 950px) {
+    .weather-card {
+        padding: 15px;
+        width: 95%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    .styled-table td {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+    #updateBtn {
+        padding: 10px;
+        font-size: 14px;
+        width: 95%;
+    }
+}
