@@ -7,6 +7,8 @@
     <title>Your Thermo Assistant</title>
     <link rel="stylesheet" href="style-css/main.css">
     <link rel="stylesheet" href="style-css/light.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
@@ -60,31 +62,33 @@
             <button class="close-btn" onclick="closeSettingsPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
 
             <h2 style="margin-bottom: 20px; color: #fff;">Ustawienia Systemu ⚙️</h2>
-            <div style="border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px;">
-                <h3 style="color: #00d2ff; margin-bottom: 10px;">Głośność 🔊</h3>
-                <div style="display: flex; justify-content: center; gap: 15px;">
-                    <button onclick="controlVolume('vol_down')" style="background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">➖</button>
+            <div class="volume-control-container">
+                <h3 style="color: #00d2ff; margin-bottom: 15px;">Głośność <span id="vol-percent">--%</span></h3>
 
-                    <button onclick="controlVolume('mute')" style="background: rgba(255, 50, 50, 0.3); border: 1px solid #ff5555; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">🔇</button>
+                <div class="slider-wrapper">
+                    <span class="vol-icon" id="vol-icon-status">🔈</span>
 
-                    <button onclick="controlVolume('vol_up')" style="background: rgba(255,255,255,0.1); border: 1px solid #fff; color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">➕</button>
+                    <input type="range" id="volume-slider" min="0" max="100" oninput="handleVolumeInput(this.value)">
+
+                    <span class="vol-icon">🔊</span>
                 </div>
             </div>
-            <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
-                <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
-                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
+        </div>
+        <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
+            <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
 
-                <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
+            <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
                 🔍 Skanuj urządzenia
             </button>
 
-                <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
-                    <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
-                </ul>
+            <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
+            </ul>
 
-                <p id="bt-status" style="margin-top: 10px; font-weight: bold; color: #fff; text-align: center;"></p>
-            </div>
+            <p id="bt-status" style="margin-top: 10px; font-weight: bold; color: #fff; text-align: center;"></p>
         </div>
+    </div>
     </div>
 
     <div id="voice-overlay" class="hidden">
@@ -196,6 +200,10 @@
                 </div>
             </div>
 
+            <div class="chart-container weather-card glass-effect" style="margin-top: 20px;">
+                <canvas id="tempChart"></canvas>
+            </div>
+
             <div id="stopka">
                 <div id="result"></div>
             </div>
@@ -203,6 +211,10 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+
+</body>
+
+</html>
 
 </body>
 

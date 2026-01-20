@@ -78,4 +78,35 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
+
+
+router.get('/history', async (req: Request, res: Response) => {
+    const MONGO_URL = process.env.MONGO_URL || "";
+    const client = new MongoClient(MONGO_URL, { family: 4 });
+
+    try {
+        await client.connect();
+        const dbName = process.env.DB_NAME || "smartthermodatabase";
+        const collName = process.env.COLLECTION_NAME || "weatherdata";
+
+        // Pobieramy 10 ostatnich rekordów, posortowanych od najstarszego (dla wykresu)
+        const history = await client.db(dbName).collection(collName)
+        .find({})
+        .sort({ _id: -1 })
+        .limit(12) // Ostatnie 12 wpisów
+        .toArray();
+
+        const formatted = history.reverse().map(item => ({
+        time: item.due_date ? item.due_date.split(' ')[1].substring(0, 5) : "--:--",
+        // Usuwamy " °C" i parsujemy na liczbę dla Chart.js
+        temp: parseFloat(item.temp_ins.replace(' °C', '')) || 0
+    }));
+        res.json(formatted);
+    } catch (error) {
+        res.status(500).json([]);
+    } finally {
+        await client.close();
+    }
+});
+
 export default router;

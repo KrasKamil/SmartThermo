@@ -12,6 +12,7 @@
 
 /* 3. Komponenty */
 
+@import 'modules/settings.css';
 @import 'modules/sidebar.css';
 @import 'modules/weather.css';
 @import 'modules/clock.css';

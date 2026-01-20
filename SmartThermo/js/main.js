@@ -9,6 +9,7 @@ import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
 import { toggleTheme, controlVolume, openPopup, closePopup } from './modules/ui.js';
 import { initVoiceAssistant } from './modules/voice.js';
 import { state } from './modules/state.js'; // Importujemy stan, żeby sprawdzać źródło
+import { updateVolumeVisuals, setVolume, handleVolumeInput } from './modules/ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
@@ -33,6 +34,10 @@ window.controlVolume = controlVolume;
 window.scanBluetooth = scanBluetooth;
 window.connectBluetooth = connectBluetooth;
 window.controlSystemMedia = controlSystemMedia;
+window.updateVolumeVisuals = updateVolumeVisuals;
+window.setVolume = setVolume;
+window.handleVolumeInput = handleVolumeInput;
+
 
 // --- STEROWANIE MINI PLAYEREM (Radio vs System) ---
 window.miniControl = (action) => {

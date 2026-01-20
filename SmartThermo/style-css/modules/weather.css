@@ -68,3 +68,31 @@
         width: 95%;
     }
 }
+
+
+/* Styl dla kontenera wykresu */
+
+.chart-container {
+    width: 100%;
+    max-width: 450px;
+    height: 280px;
+    /* Nieco mniejszy, by pasował pod player */
+    padding: 20px;
+    margin: 20px auto 0 auto;
+    /* Wyśrodkowanie */
+    box-sizing: border-box;
+}
+
+.chart-container.glass-effect {
+    transition: all 0.3s ease;
+}
+
+
+/* Responsywność dla wykresu */
+
+@media (max-width: 950px) {
+    .chart-container {
+        height: 200px;
+        padding: 10px;
+    }
+}

@@ -13,6 +13,7 @@
         "cors": "^2.8.5",
         "dotenv": "^17.2.3",
         "express": "^4.18.2",
+        "loudness": "^0.4.2",
         "mongo": "^0.1.0",
         "mongodb": "^6.21.0",
         "querystring": "^0.2.1",

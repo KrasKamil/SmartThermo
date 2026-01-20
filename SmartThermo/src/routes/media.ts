@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import * as loudness from 'loudness';
 // Zachowujemy Twoje helpery do sprawdzania co gra
 import { isWindows, getWindowsMedia, getLineInStatus } from '../helpers/system';
 
@@ -46,9 +47,28 @@ router.get('/config', (req, res) => {
     res.json({ clockFormat: process.env.CLOCK_FORMAT || '12' });
 });
 
+// Służy do pobierania aktualnego stanu głośności z systemu dzięki bibliotece loudness
+router.get('/media/volume', async (req: Request, res: Response) => {
+    try {
+        // Pobierz aktualną głośność (0-100)
+        const vol = await loudness.getVolume();
+        // Pobierz status wyciszenia (true/false)
+        const muted = await loudness.getMuted();
+        
+        // Zwracamy 0 jeśli jest wyciszony systemowo, w przeciwnym razie aktualną wartość
+        res.json({ 
+            volume: muted ? 0 : vol,
+            muted: muted
+        });
+    } catch (error) {
+        console.error("Błąd odczytu głośności:", error);
+        res.json({ volume: 50 }); // Fallback w razie błędu
+    }
+});
+
 // 3. STEROWANIE (NIRCMD) - TU DZIEJE SIĘ MAGIA
 router.post('/media/control', async (req: Request, res: Response) => {
-    const { action } = req.body;
+    const { action, value } = req.body;
     
     if (!isWindows) return res.json({ status: "ignored_not_windows" });
 
@@ -59,10 +79,10 @@ router.post('/media/control', async (req: Request, res: Response) => {
         // Skala NirCmd to 0 - 65535.
         // Zmiana o 4000 to ok. 6% paska głośności Windowsa
         case 'vol_up':
-            runNirCmd('changesysvolume 4000');
+            runNirCmd('changesysvolume 2000');
             break;
         case 'vol_down':
-            runNirCmd('changesysvolume -4000');
+            runNirCmd('changesysvolume -2000');
             break;
         case 'mute':
             // '2' oznacza przełączanie (toggle) wyciszenia
@@ -85,6 +105,14 @@ router.post('/media/control', async (req: Request, res: Response) => {
         case 'stop':      
             runNirCmd('sendkeypress 0xB2'); 
             break;
+            
+        case 'set_volume':
+        if (typeof value === 'number') {
+            // Konwersja 0-100 na skalę nircmd (0-65535)
+            const nircmdVal = Math.floor(value * 655.35);
+            runNirCmd(`setsysvolume ${nircmdVal}`);
+        }
+        break;
         
         default:
             console.warn("Nieznana akcja:", action);
