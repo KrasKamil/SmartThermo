@@ -4,7 +4,6 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import * as loudness from 'loudness';
-// Zachowujemy Twoje helpery do sprawdzania co gra
 import { isWindows, getWindowsMedia, getLineInStatus } from '../helpers/system';
 
 const router = Router();
@@ -126,31 +125,60 @@ router.post('/media/control', async (req: Request, res: Response) => {
 router.get('/media/now-playing', async (req: Request, res: Response) => {
     if (isWindows) {
         try {
+            // 1. Pobierz wszystkie sesje z Windowsa
             const allSessions = await getWindowsMedia();
-            let activeSession = allSessions.find((s: any) => s.Status === 4) || allSessions[0];
+            
+            // Znajdź sesję, która ma jakikolwiek Tytuł (to eliminuje puste sesje systemowe)
+            // Szukamy najpierw Playing (4), potem Paused (5), potem czegokolwiek z tytułem
+            const playingSession = allSessions.find((s: any) => s.Status === 4);
+            const anySession = allSessions.find((s: any) => s.Title && s.Title.length > 0);
 
-            if (activeSession && activeSession.Status === 4) {
+            // LOGIKA PRIORYTETÓW:
+
+            // A. Jeśli coś gra aktywnie -> Pokaż to
+            if (playingSession) {
                 return res.json({
-                    title: activeSession.Title,
-                    artist: activeSession.Artist,
-                    status: "Playing"
+                    title: playingSession.Title,
+                    artist: playingSession.Artist,
+                    status: "Playing",
+                    source: "System",
+                    cover: ""
                 });
             }
 
+            // B. Jeśli nic nie gra aktywnie, ale mamy sesję z tytułem (np. Spotify w tle)
+            // Pokaż to zamiast "None"!
+            if (anySession) {
+                return res.json({
+                    title: anySession.Title,
+                    artist: anySession.Artist,
+                    status: "Paused", // Wyświetli przycisk Play
+                    source: "System",
+                    cover: ""
+                });
+            }
+
+            // C. Dopiero jeśli system jest CAŁKIEM PUSTY, sprawdź Bluetooth
             const lineDevice = await getLineInStatus();
             if (lineDevice) {
                 return res.json({
                     title: "Audio Bluetooth",
                     artist: lineDevice,
-                    status: "Playing"
+                    status: "Playing",
+                    source: "Bluetooth"
                 });
             }
-            res.json({ title: "", artist: "", status: "Paused" });
+
+            // D. Naprawdę nic nie ma
+            res.json({ title: "", artist: "", status: "Paused", source: "None" });
+
         } catch (error) {
-            res.json({ title: "", artist: "", status: "Error" });
+            console.error(error);
+            res.json({ title: "", artist: "", status: "Error", source: "None" });
         }
     } else {
-        res.json({ title: "Linux/Rpi", artist: "", status: "Paused" });
+        // Linux placeholder
+        res.json({ title: "Linux Audio", artist: "Unknown", status: "Paused" });
     }
 });
 

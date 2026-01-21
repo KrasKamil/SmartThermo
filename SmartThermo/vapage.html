@@ -20,8 +20,8 @@
             <button class="close-btn" onclick="closeSpotifyPopup()">×</button>
             <div id="spotify-widget" class="spotify-widget glass-effect" style="position: static; box-shadow: none; background: none;">
                 <div id="login-view">
-                    <p>Połącz z muzyką</p>
-                    <a href="/login" class="spotify-btn">Zaloguj do Spotify 🎵</a>
+                    <p>Tryb lokalny</p>
+                    <a href="spotify:" class="spotify-btn">Otwórz aplikację 🎵</a>
                 </div>
                 <div id="player-view" style="display: none;">
                     <div class="track-info">
@@ -73,22 +73,22 @@
                     <span class="vol-icon">🔊</span>
                 </div>
             </div>
-        </div>
-        <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
-            <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
 
-            <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
+            <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
+                <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
+
+                <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
                 🔍 Skanuj urządzenia
             </button>
 
-            <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
-                <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
-            </ul>
+                <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
+                </ul>
 
-            <p id="bt-status" style="margin-top: 10px; font-weight: bold; color: #fff; text-align: center;"></p>
+                <p id="bt-status" style="margin-top: 10px; font-weight: bold; color: #fff; text-align: center;"></p>
+            </div>
         </div>
-    </div>
     </div>
 
     <div id="voice-overlay" class="hidden">

@@ -3,13 +3,20 @@
 import { initClock } from './modules/clock.js';
 import { fetchWeather, clearWeatherData } from './modules/weather.js';
 import { handleSpotifyToken } from './modules/spotify.js';
-import { loadStations, playRadio, toggleRadioPlay } from './modules/radio.js'; // Dodano toggleRadioPlay
+import { loadStations, toggleRadioPlay } from './modules/radio.js';
 import { checkSystemMedia, controlSystemMedia } from './modules/systemPlayer.js';
 import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
-import { toggleTheme, controlVolume, openPopup, closePopup } from './modules/ui.js';
 import { initVoiceAssistant } from './modules/voice.js';
-import { state } from './modules/state.js'; // Importujemy stan, żeby sprawdzać źródło
-import { updateVolumeVisuals, setVolume, handleVolumeInput } from './modules/ui.js';
+import { state } from './modules/state.js';
+import {
+    toggleTheme,
+    controlVolume,
+    openPopup,
+    closePopup,
+    updateVolumeVisuals,
+    setVolume,
+    handleVolumeInput
+} from './modules/ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
@@ -37,6 +44,7 @@ window.controlSystemMedia = controlSystemMedia;
 window.updateVolumeVisuals = updateVolumeVisuals;
 window.setVolume = setVolume;
 window.handleVolumeInput = handleVolumeInput;
+
 
 
 // --- STEROWANIE MINI PLAYEREM (Radio vs System) ---

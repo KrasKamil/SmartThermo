@@ -6,63 +6,71 @@ export const isWindows = os.platform() === 'win32';
 
 export const runCommand = (command: string): Promise<string> => {
     return new Promise((resolve) => {
-        exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        // Zwiększamy bufor pamięci, bo lista sesji może być długa
+        exec(command, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 2 }, (error, stdout, stderr) => {
             resolve(stdout ? stdout.trim() : "");
         });
     });
 };
 
 export const getWindowsMedia = async () => {
+    // Skrypt uproszczony pod PowerShell 7
     const psScript = `
     $ErrorActionPreference = 'SilentlyContinue';
-    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media,ContentType=WindowsRuntime] | Out-Null;
-    $g = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync().GetAwaiter().GetResult();
-    
-    $sessions = $g.GetSessions();
+    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType=WindowsRuntime] | Out-Null;
+    $manager = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync().GetAwaiter().GetResult();
     $results = @();
-
-    foreach ($s in $sessions) {
+    foreach ($s in $manager.GetSessions()) {
         $props = $s.TryGetMediaPropertiesAsync().GetAwaiter().GetResult();
-        $info = $s.GetPlaybackInfo();
-        
-        $item = @{
-            Type = "Session";
-            Title = $props.Title;
-            Artist = $props.Artist;
-            Status = $info.PlaybackStatus; 
+        if ($props) {
+            $results += @{
+                Title = $props.Title;
+                Artist = $props.Artist;
+                Status = [int]$s.GetPlaybackInfo().PlaybackStatus;
+            };
         }
-        $results += $item;
     }
     $results | ConvertTo-Json -Compress
     `;
-    
-    const command = `chcp 65001 >NUL & powershell -Command "${psScript.replace(/\s+/g, ' ').trim()}"`;
+
+    // Używamy PWSH zamiast POWERSHELL
+    const command = `pwsh -NoProfile -ExecutionPolicy Bypass -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; ${psScript.replace(/\s+/g, ' ').trim()}"`;
+
     try {
         const output = await runCommand(command);
-        const match = output.match(/\[.*\]|{.*}/);
-        if (match) {
-            const parsed = JSON.parse(match[0]);
-            return Array.isArray(parsed) ? parsed : [parsed];
-        }
+        if (!output) return [];
+        const parsed = JSON.parse(output);
+        return Array.isArray(parsed) ? parsed : [parsed];
     } catch (e) {
-        console.error("Błąd parsowania mediów Windows:", e);
+        return [];
     }
-    return [];
 };
 
+
 export const getLineInStatus = async () => {
-    const psCmd = `Get-CimInstance Win32_PnPEntity | Where-Object { ($_.Name -match 'A2DP' -or $_.Name -match 'SNK' -or $_.Name -match 'Linia' -or $_.Name -match 'MI 9') -and $_.Status -eq 'OK' } | Select-Object Name, Description | ConvertTo-Json -Compress`;
+    // USUNĄŁEM: -match 'Hands-Free' z poniższej listy.
+    // Teraz szuka tylko A2DP (muzyka) lub SNK (sink).
+    // Dodatkowo filtrujemy "AG" (Audio Gateway), który często jest mylący.
+    const psCmd = `Get-CimInstance Win32_PnPEntity | Where-Object { ($_.Name -match 'A2DP' -or $_.Name -match 'SNK') -and $_.Name -notmatch 'Hands-Free' -and $_.Status -eq 'OK' -and $_.ConfigManagerErrorCode -eq 0 } | Select-Object Name, Description, Status | ConvertTo-Json -Compress`;
     
     try {
-        const output = await runCommand(`powershell -Command "${psCmd}"`);
+        const output = await runCommand(`powershell -NoProfile -Command "${psCmd}"`);
         if (output && output.includes("Name")) {
             let parsed;
-            try { parsed = JSON.parse(output); } catch(e) { return "Urządzenie A2DP"; }
+            try {
+                parsed = JSON.parse(output);
+            } catch { return null; }
+
             const device = Array.isArray(parsed) ? parsed[0] : parsed;
-            return device.Name || device.Description || "Nieznane urządzenie";
+            
+            // Czyścimy nazwę z technicznego bełkotu
+            let cleanName = device.Name || "Urządzenie Bluetooth";
+            cleanName = cleanName.replace("Audio", "").replace("A2DP", "").replace("SNK", "").trim();
+
+            return cleanName;
         }
     } catch (e) {
-        console.error("Błąd skanowania PnP:", e);
+        // ignore error
     }
     return null;
 };

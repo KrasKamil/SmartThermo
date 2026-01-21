@@ -14,14 +14,18 @@
     align-items: center;
 }
 
-#spotify-popup {
+#spotify-popup#settings-popup {
     background: rgba(20, 20, 20, 0.95);
     border-radius: 20px;
     padding: 30px;
     display: flex;
     flex-direction: column;
+    /* To układa elementy pionowo (głośność nad BT) */
     align-items: center;
     position: relative;
+    width: 350px;
+    /* Ustal stałą szerokość, żeby się nie rozjeżdżało */
+    max-width: 90vw;
 }
 
 .close-btn {

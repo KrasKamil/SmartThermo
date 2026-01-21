@@ -58,7 +58,7 @@ def readSensor():
             pressure = 1013
     else:
         # Symulacja danych
-        temperature = round(random.uniform(18, 25), 1)
+        temperature = round(random.uniform(20, 22), 1)
         humidity = round(random.uniform(30, 60), 1)
         pressure = round(random.uniform(1000, 1030), 1)
 

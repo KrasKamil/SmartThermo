@@ -1,8 +1,13 @@
 // js/modules/bluetooth.js
 
+// js/modules/bluetooth.js
+
+// Funkcja skanowania (generuje listę i dodaje nasłuchiwanie)
 export async function scanBluetooth() {
     const list = document.getElementById('bt-device-list');
     const status = document.getElementById('bt-status');
+
+    if (!list) return console.error("Brak elementu listy BT w HTML");
 
     list.innerHTML = '<li style="color: #ccc; text-align: center;">Szukam urządzeń... ⏳</li>';
     if (status) status.innerText = "";
@@ -11,26 +16,34 @@ export async function scanBluetooth() {
         const res = await fetch('/api/bluetooth/scan');
         const devices = await res.json();
 
-        list.innerHTML = '';
+        list.innerHTML = ''; // Wyczyść listę
 
         if (!devices || devices.length === 0) {
             list.innerHTML = '<li style="color: #aaa; text-align: center;">Nie znaleziono urządzeń.</li>';
             return;
         }
 
+        // 1. Generujemy HTML bez "onclick"
         devices.forEach(dev => {
             const li = document.createElement('li');
             li.className = 'bt-item';
             const name = dev.name.trim() || dev.mac;
 
-            // Uwaga: Tutaj generujemy HTML z onclick="connectBluetooth...".
-            // Dlatego connectBluetooth musi być globalny (window).
             li.innerHTML = `
                 <span>📱 ${name}</span>
-                <button onclick="connectBluetooth('${dev.mac}')">Połącz</button>
+                <button class="bt-connect-btn" data-mac="${dev.mac}">Połącz</button>
             `;
             list.appendChild(li);
         });
+
+        // 2. Dodajemy obsługę kliknięć (Event Delegation)
+        // To naprawia problem "connectBluetooth is not defined" raz na zawsze
+        list.onclick = (e) => {
+            if (e.target && e.target.classList.contains('bt-connect-btn')) {
+                const mac = e.target.getAttribute('data-mac');
+                connectBluetooth(mac);
+            }
+        };
 
     } catch (e) {
         console.error(e);
@@ -38,6 +51,7 @@ export async function scanBluetooth() {
     }
 }
 
+// Funkcja łączenia (nie musi być w window, bo wywołujemy ją wewnątrz modułu)
 export async function connectBluetooth(mac) {
     const status = document.getElementById('bt-status');
     if (status) {
@@ -63,6 +77,7 @@ export async function connectBluetooth(mac) {
             }
         }
     } catch (e) {
+        console.error("Błąd łączenia:", e);
         if (status) {
             status.innerText = "❌ Błąd połączenia";
             status.style.color = "red";
