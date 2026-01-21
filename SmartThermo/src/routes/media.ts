@@ -11,6 +11,10 @@ const router = Router();
 // Ścieżka do nircmd.exe w głównym folderze projektu
 // process.cwd() zwraca folder, w którym uruchamiasz serwer
 const NIRCMD_PATH = path.join(process.cwd(), 'nircmd.exe');
+const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
+const PYTHON_SCRIPT_PATH = path.join(process.cwd(), 'get_media.py');
+
+
 
 // Funkcja wykonująca polecenie nircmd
 const runNirCmd = (args: string) => {
@@ -24,6 +28,38 @@ const runNirCmd = (args: string) => {
     // Uruchamiamy nircmd z odpowiednimi argumentami
     exec(`"${NIRCMD_PATH}" ${args}`, (error) => {
         if (error) console.error(`Błąd NirCmd (${args}):`, error.message);
+    });
+};
+
+const getMediaFromPython = (): Promise<any> => {
+    return new Promise((resolve) => {
+        
+        if (!fs.existsSync(VENV_PYTHON_PATH)) {
+            console.error(`❌ BŁĄD: Nie znaleziono Pythona w venv: ${VENV_PYTHON_PATH}`);
+            resolve(null);
+            return;
+        }
+
+        // --- ZMIANA TUTAJ: Dodajemy opcję { maxBuffer: 5 * 1024 * 1024 } (5MB) ---
+        exec(
+            `"${VENV_PYTHON_PATH}" "${PYTHON_SCRIPT_PATH}"`, 
+            { maxBuffer: 1024 * 1024 * 5 }, // Zwiększamy limit bufora dla exec
+            (error, stdout, stderr) => {
+                if (error) {
+                    console.error("Błąd skryptu Python:", error.message);
+                    if (stderr) console.error("Python stderr:", stderr);
+                    resolve(null);
+                    return;
+                }
+                try {
+                    const data = JSON.parse(stdout.trim());
+                    resolve(data);
+                } catch (e) {
+                    console.error("Błąd parsowania JSON:", e);
+                    resolve(null);
+                }
+            }
+        );
     });
 };
 
@@ -125,40 +161,24 @@ router.post('/media/control', async (req: Request, res: Response) => {
 router.get('/media/now-playing', async (req: Request, res: Response) => {
     if (isWindows) {
         try {
-            // 1. Pobierz wszystkie sesje z Windowsa
-            const allSessions = await getWindowsMedia();
-            
-            // Znajdź sesję, która ma jakikolwiek Tytuł (to eliminuje puste sesje systemowe)
-            // Szukamy najpierw Playing (4), potem Paused (5), potem czegokolwiek z tytułem
-            const playingSession = allSessions.find((s: any) => s.Status === 4);
-            const anySession = allSessions.find((s: any) => s.Title && s.Title.length > 0);
+            // A. POBIERAMY DANE Z PYTHONA
+            const pyData = await getMediaFromPython();
 
-            // LOGIKA PRIORYTETÓW:
-
-            // A. Jeśli coś gra aktywnie -> Pokaż to
-            if (playingSession) {
+            // Jeśli Python zwrócił dane o grającej muzyce
+            if (pyData && pyData.found && pyData.title) {
                 return res.json({
-                    title: playingSession.Title,
-                    artist: playingSession.Artist,
-                    status: "Playing",
-                    source: "System",
-                    cover: ""
+                    title: pyData.title,
+                    artist: pyData.artist,
+                    status: pyData.status,
+                    // ZMIANA: Przekazujemy źródło z Pythona (np. "Spotify.exe"), a jak brak to "System"
+                    source: pyData.source || "System", 
+                    // ZMIANA: Przekazujemy okładkę z Pythona (Base64)
+                    cover: pyData.cover || ""          
                 });
             }
 
-            // B. Jeśli nic nie gra aktywnie, ale mamy sesję z tytułem (np. Spotify w tle)
-            // Pokaż to zamiast "None"!
-            if (anySession) {
-                return res.json({
-                    title: anySession.Title,
-                    artist: anySession.Artist,
-                    status: "Paused", // Wyświetli przycisk Play
-                    source: "System",
-                    cover: ""
-                });
-            }
-
-            // C. Dopiero jeśli system jest CAŁKIEM PUSTY, sprawdź Bluetooth
+            // B. Jeśli system Windows nic nie zwrócił, sprawdź wejście liniowe (Bluetooth)
+            // (Zachowujemy Twoją starą logikę jako fallback)
             const lineDevice = await getLineInStatus();
             if (lineDevice) {
                 return res.json({
@@ -169,7 +189,7 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
                 });
             }
 
-            // D. Naprawdę nic nie ma
+            // C. Nic nie gra
             res.json({ title: "", artist: "", status: "Paused", source: "None" });
 
         } catch (error) {
@@ -177,7 +197,6 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
             res.json({ title: "", artist: "", status: "Error", source: "None" });
         }
     } else {
-        // Linux placeholder
         res.json({ title: "Linux Audio", artist: "Unknown", status: "Paused" });
     }
 });

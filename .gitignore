@@ -14,7 +14,8 @@ __pycache__/
 *.pyd
 .Python
 env/
-.venv/
+venv/
+env-media/
 *.env
 *.env.*
 *.egg-info/

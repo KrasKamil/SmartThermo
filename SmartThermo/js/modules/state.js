@@ -1,8 +1,23 @@
-// Tutaj przechowywany jest stan aplikacji
+// js/modules/state.js
 export const state = {
-    activeSource: 'none', // 'spotify', 'radio', 'system'
+    // Źródło dźwięku: 'spotify', 'radio', 'system', 'bluetooth', 'none'
+    activeSource: 'none',
+
+    // Czy cokolwiek gra (Globalny status)
+    isPlaying: false,
+
+    // Informacje o utworze (wspólne dla wszystkich źródeł)
+    currentTrack: {
+        title: '',
+        artist: '',
+        cover: ''
+    },
+
+    // Specyficzne dla Radia
     isRadioPlaying: false,
     globalStationList: [],
     currentStationIndex: -1,
+
+    // Ustawienia
     use24HourFormat: false
 };

@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="style-css/main.css">
     <link rel="stylesheet" href="style-css/light.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
 
 <body>
@@ -18,28 +17,9 @@
     <div id="spotify-overlay">
         <div id="spotify-popup">
             <button class="close-btn" onclick="closeSpotifyPopup()">×</button>
-            <div id="spotify-widget" class="spotify-widget glass-effect" style="position: static; box-shadow: none; background: none;">
-                <div id="login-view">
-                    <p>Tryb lokalny</p>
-                    <a href="spotify:" class="spotify-btn">Otwórz aplikację 🎵</a>
-                </div>
-                <div id="player-view" style="display: none;">
-                    <div class="track-info">
-                        <img id="current-art" src="" alt="Okładka" class="album-art" />
-                        <div class="text-info">
-                            <h3 id="current-track">Nie odtwarzam</h3>
-                            <p id="current-artist">Brak aktywności</p>
-                        </div>
-                    </div>
-                    <div class="controls">
-                        <button id="prev-btn" class="ctrl-btn">⏮</button>
-                        <button id="play-btn" class="ctrl-btn play">⏯</button>
-                        <button id="next-btn" class="ctrl-btn">⏭</button>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
+
     <div id="radio-overlay" class="hidden" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); justify-content: center; align-items: center;">
         <div class="glass-effect" style="padding: 25px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
             <button class="close-btn" onclick="closeRadioPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
@@ -67,9 +47,7 @@
 
                 <div class="slider-wrapper">
                     <span class="vol-icon" id="vol-icon-status">🔈</span>
-
                     <input type="range" id="volume-slider" min="0" max="100" oninput="handleVolumeInput(this.value)">
-
                     <span class="vol-icon">🔊</span>
                 </div>
             </div>
@@ -79,8 +57,8 @@
                 <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sparuj telefon, aby puszczać muzykę przez głośniki urządzenia.</p>
 
                 <button onclick="scanBluetooth()" style="background: #2E94E3; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
-                🔍 Skanuj urządzenia
-            </button>
+                    🔍 Skanuj urządzenia
+                </button>
 
                 <ul id="bt-device-list" style="list-style: none; padding: 0; margin-top: 15px; max-height: 200px; overflow-y: auto;">
                     <li style="color: #666; text-align: center;">Kliknij Skanuj...</li>
@@ -167,6 +145,7 @@
 
         <div class="kolumna">
             <p id='main'></p>
+
             <div class="datetime">
                 <div class="date">
                     <span id="dayname">Day</span>,
@@ -179,6 +158,27 @@
                     <span id='minute'>00</span>:
                     <span id='second'>00</span>
                     <span id='period'>AM</span>
+                </div>
+            </div>
+
+            <div id="spotify-widget" class="spotify-widget glass-effect" style="display: none;">
+                <div id="login-view">
+                    <p>System Audio</p>
+                    <a href="spotify:" class="spotify-btn">Otwórz aplikację 🎵</a>
+                </div>
+                <div id="player-view" style="display: none;">
+                    <div class="track-info">
+                        <img id="current-art" src="" alt="Okładka" class="album-art" />
+                        <div class="text-info">
+                            <h3 id="current-track">Nie odtwarzam</h3>
+                            <p id="current-artist">Brak aktywności</p>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button onclick="controlSystemMedia('prev')" class="ctrl-btn">⏮</button>
+                        <button id="play-pause-btn" onclick="controlSystemMedia('playpause')" class="ctrl-btn play">⏯</button>
+                        <button onclick="controlSystemMedia('next')" class="ctrl-btn">⏭</button>
+                    </div>
                 </div>
             </div>
             <div id="mini-player" class="media-info glass-effect hidden">
@@ -211,10 +211,6 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
-
-</body>
-
-</html>
 
 </body>
 
