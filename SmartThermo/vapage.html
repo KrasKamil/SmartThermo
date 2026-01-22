@@ -7,6 +7,7 @@
     <title>Your Thermo Assistant</title>
     <link rel="stylesheet" href="style-css/main.css">
     <link rel="stylesheet" href="style-css/light.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -14,15 +15,13 @@
 
     <div class="container"></div>
 
-    <div id="spotify-overlay">
-        <div id="spotify-popup">
+    <div id="spotify-overlay" class="popup-centered" style="display: none;">
+        <div id="spotify-popup" class="popup-bordered">
             <button class="close-btn" onclick="closeSpotifyPopup()">×</button>
-
             <div style="text-align: center; color: white;">
                 <img src="style-css/img/spotify.png" style="width: 64px; margin-bottom: 20px;">
                 <h2>Spotify Connect</h2>
                 <p style="margin: 15px 0; color: #ccc;">Steruj muzyką z tego urządzenia lub otwórz aplikację.</p>
-
                 <a href="spotify:" class="spotify-btn" style="
                     display: inline-block;
                     background: #1DB954;
@@ -57,8 +56,8 @@
         </div>
     </div>
 
-    <div id="settings-overlay" class="hidden" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); justify-content: center; align-items: center;">
-        <div class="glass-effect" style="padding: 30px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
+    <div id="settings-overlay" class="hidden popup-centered" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85);">
+        <div class="glass-effect popup-bordered" style="padding: 30px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
             <button class="close-btn" onclick="closeSettingsPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
 
             <h2 style="margin-bottom: 20px; color: #fff;">Ustawienia Systemu ⚙️</h2>
@@ -184,29 +183,36 @@
             <div id="spotify-widget" class="spotify-widget glass-effect" style="display: none;">
                 <div id="login-view">
                     <p>System Audio</p>
-                    <a href="spotify:" class="spotify-btn">Otwórz aplikację 🎵</a>
+                    <a href="spotify:" class="spotify-btn">Otwórz Spotify 🎵</a>
                 </div>
 
                 <div id="player-view" style="display: none;">
-                    <div class="track-info">
-                        <img id="current-art" src="" alt="Okładka" class="album-art" />
 
-                        <div class="text-info">
-                            <h3 id="current-track">Tytuł</h3>
-                            <p id="current-artist">Wykonawca</p>
+                    <div class="player-cover-container">
+                        <div class="player-cover">
+                            <img id="current-art" src="" alt="Album" />
 
-                            <div class="media-anim" id="music-anim">
-                                <span></span><span></span><span></span>
+                            <div class="equalizer-overlay" id="equalizer-anim">
+                                <span class="bar"></span>
+                                <span class="bar"></span>
+                                <span class="bar"></span>
+                                <span class="bar"></span>
+                                <span class="bar"></span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="controls">
-                        <button onclick="miniControl('prev')" class="ctrl-btn">⏮</button>
+                    <div class="player-controls-area">
+                        <div class="track-text">
+                            <h3 id="current-track">Tytuł utworu</h3>
+                            <p id="current-artist">Wykonawca</p>
+                        </div>
 
-                        <button id="play-pause-btn" onclick="miniControl('play')" class="ctrl-btn play">⏸</button>
-
-                        <button onclick="miniControl('next')" class="ctrl-btn">⏭</button>
+                        <div class="buttons-row">
+                            <button onclick="miniControl('prev')" class="btn-sml"><i class="fas fa-step-backward"></i></button>
+                            <button id="play-pause-btn" onclick="miniControl('play')" class="btn-big"><i class="fas fa-play"></i></button>
+                            <button onclick="miniControl('next')" class="btn-sml"><i class="fas fa-step-forward"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>

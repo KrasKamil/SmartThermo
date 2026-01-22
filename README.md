@@ -1,44 +1,153 @@
+# Smart Thermo
 
-# TypeScript API with TypeORM
+Smart Thermo to nowoczesny system asystenta termicznego z interfejsem webowym, obsługą audio, Spotify, Bluetooth, pogodą i sterowaniem systemowym.
 
-Source or program: https://levelup.gitconnected.com/creating-a-node-js-api-with-express-and-typescript-549fba5f5a33
+## Wymagania
+- Node.js (zalecane: v18+)
+- Python 3.10+ (zalecane venv)
+- npm
+- Przeglądarka Chrome/Edge/Firefox
 
-zainstaluj typescript, yarn i postepuj zgodnie z instrukcja
+## Struktura projektu
+- `env-media/` — wirtualne środowisko Python do obsługi audio/systemu
+- `venv/` — drugie środowisko Python do pozostałych skryptów
+- `src/` — backend Node.js (TypeScript, API, serwer)
+- `js/` — frontend JavaScript (widgety, UI)
+- `style-css/` — style CSS (dark/light, animacje)
+- `vapage.html` — główny plik strony
+- `.env` — konfiguracja środowiska (np. klucze API, porty)
+- `requirements.txt` — zależności Python
+- `package.json` — zależności Node.js
+- `get_media.py`, `control_media.py` — skrypty do obsługi audio/systemu
+- `universal_logger.py` — logowanie i monitoring
+- `nircmd.exe` — narzędzie do sterowania systemem Windows
 
-jak sie bedzie program sypal to musisz dodac komende:
-yarn add -D ts-node
-zainstaluj npm install cors (do cross origin disabling - tutaj szczegoly https://simonplend.com/how-to-fix-those-confusing-cors-errors-when-calling-your-express-api/#:~:text=If%20you%20call%20the%20cors%20middleware%20in%20your,domain%20-%20can%20make%20requests%20to%20your%20API.);
+## Funkcje
+- Odtwarzanie muzyki z systemu, Spotify, Bluetooth
+- Widgety: Spotify, radio, pogoda, sterowanie audio
+- Sterowanie systemem (play/pause, głośność, next/prev)
+- Obsługa API pogodowego
+- Logowanie zdarzeń i błędów
+- Tryb jasny/ciemny, nowoczesny UI
+- Integracja z .env (klucze, porty, konfiguracja)
 
-przed rozpoczeciem serwera skompiluj pliki komenda tsc (kompilacja typescript)
-wersja tsc 4.9.4
-wersja node 14.21.2
-skompiluj i odpal server komenda 
-yarn start:dev 
-lub [coderunner :)]
-sprawdz url w przegladarce: http://localhost:3333/
-powinien dzi wyrzucic odpowiedz z serwera
-włącz plik  vapage.html 
+## Instalacja
 
+### 1. Utwórz dwa środowiska Python
 
+```bash
+python -m venv env-media
+python -m venv venv
+```
 
+Zainstaluj zależności:
 
-## Run this project
+```bash
+# Aktywuj env-media
+source env-media/bin/activate  # Linux/Mac
+env-media\Scripts\activate    # Windows
+pip install -r requirements.txt
 
-1. Zainstaluj zależności:
+# Aktywuj venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate    # Windows
+pip install -r requirements.txt
+```
+
+### 2. Instalacja zależności Node.js
+
 ```bash
 npm install
 ```
-2. Uruchom aplikację w trybie deweloperskim (z nodemon):
+
+### 3. Konfiguracja pliku `.env`
+
+Utwórz plik `.env` w głównym katalogu i dodaj wymagane zmienne środowiskowe, np.:
+
 ```
-npm run start:dev
+PORT=8080
+SPOTIFY_CLIENT_ID=twoj_client_id
+SPOTIFY_CLIENT_SECRET=twoj_client_secret
+API_KEY=twoj_api_key
 ```
-## Build and Run (Production)
-- Install the dependencies:
+
+### 4. Budowanie i uruchamianie strony
+
+#### Backend (Node.js)
+
+```bash
+npm run build   # kompilacja TypeScript
+npm start       # uruchomienie serwera
 ```
-npm run build
-```
-- Build and run the app:
-```
-npm run start:prod
-```
+
+#### Frontend
+
+Plik `vapage.html` jest główną stroną. Skrypty JS i CSS są ładowane automatycznie.
+
+#### Python (media/system)
+
+Aktywuj środowisko `env-media` i uruchom odpowiednie skrypty (np. obsługa audio, API systemowe).
+
+## Użytkowanie
+- Strona dostępna pod adresem `http://localhost:PORT` (PORT z `.env`)
+- Widgety: Spotify, radio, pogoda, sterowanie audio
+- Możliwość sterowania systemem i odtwarzaniem muzyki
+- Logi dostępne w pliku `universal_logger.py` oraz konsoli
+- Obsługa przez przeglądarkę i API
+
+## Integracje i API
+- Spotify: wymaga kluczy w `.env`
+- Pogoda: wymaga klucza API
+- Bluetooth: obsługa przez system i JS
+- System audio: obsługa przez skrypty Python i nircmd.exe
+
+## Testowanie
+- Testy manualne: uruchom stronę, sprawdź widgety, API, sterowanie
+- Logi błędów i zdarzeń: sprawdź plik logów oraz konsolę
+- W razie problemów sprawdź:
+  - Poprawność pliku `.env`
+  - Aktywację odpowiedniego venv
+  - Dostępność portu
+  - Uprawnienia do nircmd.exe
+
+## FAQ
+**Jak zmienić port?**
+Zmień wartość `PORT` w pliku `.env`.
+
+**Jak dodać własny widget?**
+Dodaj plik JS w folderze `js/modules/` i zarejestruj w `main.js`.
+
+**Jak dodać nową integrację API?**
+Dodaj klucz do `.env`, napisz obsługę w `src/routes/` i frontend w `js/modules/`.
+
+**Jak uruchomić tylko backend?**
+`npm start` (Node.js)
+
+**Jak uruchomić tylko skrypty Python?**
+Aktywuj odpowiedni venv i uruchom skrypt np. `python get_media.py`
+
+## Przykłady użycia
+- Odtwarzanie muzyki: kliknij Spotify lub radio, steruj z poziomu strony
+- Zmiana głośności: użyj suwaka w ustawieniach
+- Aktualizacja pogody: kliknij Update Data
+- Sterowanie systemem: przyciski play/pause/next/prev
+
+## Troubleshooting
+- Sprawdź logi w konsoli i pliku logów
+- Upewnij się, że oba venvy są aktywne
+- Sprawdź uprawnienia do plików i portów
+- W razie problemów z API sprawdź klucze w `.env`
+
+## Dokumentacja i linki
+- [Node.js](https://nodejs.org/)
+- [Python](https://www.python.org/)
+- [Spotify API](https://developer.spotify.com/documentation/web-api/)
+- [Chart.js](https://www.chartjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+
+## Autor
+KrasKamil
+
+---
+Jeśli masz pytania lub chcesz rozwinąć projekt, napisz na GitHub!
 

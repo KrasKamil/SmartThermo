@@ -25,6 +25,8 @@ app.listen(PORT, () => {
     console.log(`   📻  Radio Lista: http://localhost:${PORT}/api/radio/list`);
     console.log(`   🐛  Debug BT:    http://localhost:${PORT}/api/debug/devices`);
     console.log(`   🦷  Scan BT:     http://localhost:${PORT}/api/bluetooth/scan`);
+    console.log(`   ⚙️  Config:      http://localhost:${PORT}/api/config`);
+    console.log(`   🔊  Głośność:    http://localhost:${PORT}/api/media/control);`);
     console.log("");
     console.log("===================================================");
     console.log("📝 Oczekiwanie na zapytania...");

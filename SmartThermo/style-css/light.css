@@ -1,3 +1,70 @@
+/* --- JASNY MOTYW DLA PLAYERA SPOTIFY --- */
+
+.light-mode .spotify-widget {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border: 1.5px solid #b3e6ff;
+    box-shadow: 0 8px 32px 0 rgba(0, 210, 255, 0.10);
+}
+
+.light-mode .player-cover-container {
+    background: rgba(0, 210, 255, 0.06);
+}
+
+.light-mode .player-cover {
+    background: linear-gradient(135deg, #b3e6ff, #fff6e6, #f5576c);
+    box-shadow: 0 0 12px #b3e6ff44;
+}
+
+.light-mode .player-cover img {
+    background: #fff;
+}
+
+.light-mode .equalizer-overlay {
+    background: linear-gradient(to top, rgba(200, 240, 255, 0.7), transparent);
+}
+
+.light-mode .bar {
+    background: #00bcd4;
+    box-shadow: 0 0 5px #00bcd4aa;
+}
+
+.light-mode .player-controls-area {
+    background: none;
+}
+
+.light-mode .track-text h3#current-track {
+    color: #222;
+}
+
+.light-mode .track-text p#current-artist {
+    color: #666;
+}
+
+.light-mode .btn-sml {
+    background: rgba(0, 210, 255, 0.08);
+    color: #00bcd4;
+    border: 1px solid #b3e6ff;
+}
+
+.light-mode .btn-sml:hover {
+    background: #b3e6ff;
+    color: #fff;
+}
+
+.light-mode .btn-big {
+    background: linear-gradient(135deg, #b3e6ff 0%, #fff6e6 100%);
+    color: #00bcd4;
+    box-shadow: 0 4px 15px #b3e6ff55;
+    border: 1.5px solid #b3e6ff;
+}
+
+.light-mode .btn-big:hover {
+    background: #00bcd4;
+    color: #fff;
+    box-shadow: 0 6px 20px #00bcd4aa;
+}
+
+
 /* =========================================
    LIGHT MODE (TRYB JASNY) - POPRAWIONY
    ========================================= */
@@ -11,24 +78,45 @@
 /* --- PRZYCISKI BOCZNE --- */
 
 .light-mode #voiceBtn {
-    background-color: #2F4858;
+    background: linear-gradient(135deg, #b3e6ff 0%, #fff6e6 100%);
+    color: #00bcd4;
+    border: 1.5px solid #b3e6ff;
+    box-shadow: 0 2px 8px #b3e6ff33;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .light-mode #voiceBtn:hover {
-    background-color: #263b49;
+    background: #00bcd4;
+    color: #fff;
+    box-shadow: 0 4px 16px #00bcd444;
 }
 
 .light-mode #updateBtn {
-    background-color: #6a7b5b;
+    background: linear-gradient(135deg, #fff6e6 0%, #b3e6ff 100%);
+    color: #f5576c;
+    border: 1.5px solid #f5576c33;
+    box-shadow: 0 2px 8px #f5576c22;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .light-mode #updateBtn:hover {
-    background-color: #0e0ba8;
+    background: #f5576c;
+    color: #fff;
+    box-shadow: 0 4px 16px #f5576c44;
 }
 
 .light-mode #theme-button {
-    background-color: #ffffff;
-    border-color: #000000;
+    background: linear-gradient(135deg, #fff6e6 0%, #b3e6ff 100%);
+    border: 1.5px solid #b3e6ff;
+    color: #00bcd4;
+    box-shadow: 0 2px 8px #b3e6ff33;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.light-mode #theme-button:hover {
+    background: #00bcd4;
+    color: #fff;
+    box-shadow: 0 4px 16px #00bcd444;
 }
 
 

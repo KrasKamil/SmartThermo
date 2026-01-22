@@ -1,7 +1,8 @@
 /* --- OGÓLNE STYLI DLA POPUPÓW --- */
 
 #spotify-overlay,
-#radio-overlay {
+#radio-overlay,
+#settings-overlay {
     display: none;
     position: fixed;
     z-index: 2000;
@@ -9,23 +10,32 @@
     top: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(10, 20, 40, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
     justify-content: center;
     align-items: center;
 }
 
-#spotify-popup#settings-popup {
-    background: rgba(20, 20, 20, 0.95);
-    border-radius: 20px;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    /* To układa elementy pionowo (głośność nad BT) */
+.popup-centered {
+    justify-content: center;
     align-items: center;
-    position: relative;
-    width: 350px;
-    /* Ustal stałą szerokość, żeby się nie rozjeżdżało */
-    max-width: 90vw;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.popup-bordered {
+    border: 2px solid #00d2ff;
+    box-shadow: 0 0 24px rgba(0, 210, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
+    background: rgba(20, 30, 50, 0.92);
+    backdrop-filter: blur(16px);
+    border-radius: 22px;
+    padding: 32px 28px 28px 28px;
 }
 
 .close-btn {

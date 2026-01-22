@@ -25,14 +25,17 @@ class App {
     
     // --- DODAJ TEN FRAGMENT (LOGGER) ---
     this.server.use((req, res, next) => {
-        const start = Date.now();
-        res.on('finish', () => {
-            const duration = Date.now() - start;
-            // Kolorowanie statusów (zielony ok, czerwony błąd)
-            const statusIcon = res.statusCode >= 400 ? '❌' : '✅';
-            console.log(`📝 ${statusIcon} [${req.method}] ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
-        });
-        next();
+      // Wyłącz logowanie dla GET /api/media/now-playing
+      if (req.method === 'GET' && req.originalUrl.startsWith('/api/media/now-playing')) {
+        return next();
+      }
+      const start = Date.now();
+      res.on('finish', () => {
+        const duration = Date.now() - start;
+        const statusIcon = res.statusCode >= 400 ? '❌' : '✅';
+        console.log(`📝 ${statusIcon} [${req.method}] ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+      });
+      next();
     });
     // ------------------------------------
 

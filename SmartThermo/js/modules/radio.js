@@ -50,32 +50,23 @@ function highlightActiveStation(index) {
 
 export function playRadio(url, name) {
     const player = document.getElementById('radio-audio');
-    const label = document.getElementById('radio-now-playing');
+    if (!player) return;
 
-    // 1. Ucisz system (Spotify itp.), żeby nie grały dwie rzeczy naraz
-    fetch('/api/media/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pause' }) }).catch(() => {});
-
-    // 2. Włącz radio
     player.src = url;
-    if (label) label.innerText = `Gram: ${name}`;
-
     player.play().then(() => {
-        // 3. Ustaw stan
         state.isRadioPlaying = true;
-        state.isPlaying = true; // Ważne dla spójności
-        state.activeSource = 'radio';
+        state.isPlaying = true; // Dla globalnego stanu
+        state.activeSource = 'radio'; // Ustawiamy źródło na Radio
 
-        // 4. Zaktualizuj Duży Widget na pulpicie
+        // Ustawiamy okładkę i tytuł w głównym playerze
         const radioTrack = {
             title: name,
             artist: "Radio Internetowe",
-            cover: "style-css/radio.svg",
+            cover: "style-css/img/radio.svg",
             source: "Radio",
             type: "radio"
         };
         showPlayer(radioTrack);
-
-        // 5. Upewnij się, że animacja i przycisk są w stanie "Playing"
         updateUIState(true);
 
     }).catch(console.error);
@@ -94,8 +85,8 @@ export function toggleRadioPlay() {
     } else {
         // PAUZOWANIE
         player.pause();
-        // Nie zmieniamy activeSource na 'none', żeby widget nie zniknął!
-        // Tylko oznaczamy, że nie gra.
+        // WAŻNE: Nie zmieniamy activeSource na 'none', 
+        // dzięki temu checkSystemMedia w systemPlayer.js nie nadpisze widoku!
         state.isRadioPlaying = false;
         state.isPlaying = false;
         updateUIState(false);
@@ -105,13 +96,16 @@ export function toggleRadioPlay() {
 // Funkcja aktualizująca wygląd przycisku w Mini Playerze
 function updateUIState(isPlaying) {
     const playBtn = document.querySelector('#play-pause-btn');
-    const anim = document.getElementById('music-anim');
+    // POPRAWKA: Nowe ID equalizera
+    const equalizer = document.getElementById('equalizer-anim');
 
     if (isPlaying) {
-        if (playBtn) playBtn.innerHTML = '⏸';
-        if (anim) anim.classList.remove('paused');
+        if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        // POPRAWKA: Usuwamy klasę hidden-anim, żeby pokazać słupki
+        if (equalizer) equalizer.classList.remove('hidden-anim');
     } else {
-        if (playBtn) playBtn.innerHTML = '▶️';
-        if (anim) anim.classList.add('paused');
+        if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        // POPRAWKA: Dodajemy klasę hidden-anim, żeby ukryć słupki
+        if (equalizer) equalizer.classList.add('hidden-anim');
     }
 }

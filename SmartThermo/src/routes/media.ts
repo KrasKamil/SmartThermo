@@ -13,6 +13,7 @@ const router = Router();
 const NIRCMD_PATH = path.join(process.cwd(), 'nircmd.exe');
 const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
 const PYTHON_SCRIPT_PATH = path.join(process.cwd(), 'get_media.py');
+const CONTROL_MEDIA_SCRIPT = path.join(process.cwd(), 'control_media.py');
 
 
 
@@ -28,6 +29,19 @@ const runNirCmd = (args: string) => {
     // Uruchamiamy nircmd z odpowiednimi argumentami
     exec(`"${NIRCMD_PATH}" ${args}`, (error) => {
         if (error) console.error(`Błąd NirCmd (${args}):`, error.message);
+    });
+};
+
+// Funkcja uruchamiająca Pythona do sterowania (Play/Pause/Next)
+const runPythonControl = (action: string) => {
+    if (!fs.existsSync(VENV_PYTHON_PATH) || !fs.existsSync(CONTROL_MEDIA_SCRIPT)) {
+        console.error("❌ Brak środowiska Python lub skryptu control_media.py");
+        return;
+    }
+    // Uruchamia: python.exe control_media.py [action]
+    exec(`"${VENV_PYTHON_PATH}" "${CONTROL_MEDIA_SCRIPT}" ${action}`, (error, stdout, stderr) => {
+        if (error) console.error(`Błąd sterowania (${action}):`, stderr);
+        else console.log(`🐍 Python Control: ${action} - OK`);
     });
 };
 
@@ -101,95 +115,102 @@ router.get('/media/volume', async (req: Request, res: Response) => {
     }
 });
 
-// 3. STEROWANIE (NIRCMD) - TU DZIEJE SIĘ MAGIA
 router.post('/media/control', async (req: Request, res: Response) => {
-    const { action, value } = req.body;
-    
-    if (!isWindows) return res.json({ status: "ignored_not_windows" });
+    try {
+        const { action, value } = req.body;
+        console.log(`🎛️ Action: ${action}`);
 
-    console.log(`🎛️ Akcja: ${action}`);
+        if (isWindows) {
+            switch (action) {
+                // --- KATEGORIA 1: Odtwarzanie (Python WinSDK) ---
+                // Działa bezpośrednio na sesję Spotify/Systemu, a nie przez klawisze
+                case 'playpause':
+                case 'play':
+                case 'pause':
+                case 'next':
+                case 'prev':
+                case 'stop':
+                    runPythonControl(action);
+                    break;
 
-    switch (action) {
-        // --- GŁOŚNOŚĆ ---
-        // Skala NirCmd to 0 - 65535.
-        // Zmiana o 4000 to ok. 6% paska głośności Windowsa
-        case 'vol_up':
-            runNirCmd('changesysvolume 2000');
-            break;
-        case 'vol_down':
-            runNirCmd('changesysvolume -2000');
-            break;
-        case 'mute':
-            // '2' oznacza przełączanie (toggle) wyciszenia
-            runNirCmd('mutesysvolume 2');
-            break;
-
-        // --- MEDIA (Play/Pause/Next/Prev) ---
-        // Używamy kodów wirtualnych klawiszy:
-        // 0xB3 = Play/Pause, 0xB0 = Next, 0xB1 = Prev
-        case 'playpause': 
-        case 'pause':
-            runNirCmd('sendkeypress 0xB3'); 
-            break;
-        case 'next':      
-            runNirCmd('sendkeypress 0xB0'); 
-            break;
-        case 'prev':      
-            runNirCmd('sendkeypress 0xB1'); 
-            break;
-        case 'stop':      
-            runNirCmd('sendkeypress 0xB2'); 
-            break;
-            
-        case 'set_volume':
-        if (typeof value === 'number') {
-            // Konwersja 0-100 na skalę nircmd (0-65535)
-            const nircmdVal = Math.floor(value * 655.35);
-            runNirCmd(`setsysvolume ${nircmdVal}`);
+                // --- KATEGORIA 2: Głośność (NirCmd / Loudness) ---
+                case 'set_volume':
+                    if (value !== undefined) {
+                        const vol = Math.floor((parseInt(value) / 100) * 65535);
+                        runNirCmd(`setsysvolume ${vol}`);
+                    }
+                    break;
+                
+                case 'volume_up':
+                    runNirCmd('changesysvolume 2000');
+                    break;
+                case 'volume_down':
+                    runNirCmd('changesysvolume -2000');
+                    break;
+            }
+        } else {
+            // Linux (bez zmian)
+            const runLinux = (cmd: string) => exec(cmd, () => {});
+            if (action === 'playpause') runLinux('xdotool key XF86AudioPlay');
+            if (action === 'next') runLinux('xdotool key XF86AudioNext');
+            if (action === 'prev') runLinux('xdotool key XF86AudioPrev');
+            if (action === 'set_volume' && value) runLinux(`amixer set Master ${value}%`);
         }
-        break;
-        
-        default:
-            console.warn("Nieznana akcja:", action);
-            return res.json({ status: "unknown" });
-    }
 
-    res.json({ status: "success", action });
+        res.json({ status: 'success' });
+
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ error: 'Error' });
+    }
 });
 
 // 4. Now Playing
 router.get('/media/now-playing', async (req: Request, res: Response) => {
     if (isWindows) {
         try {
-            // A. POBIERAMY DANE Z PYTHONA
+            // 1. Pobierz statusy z obu źródeł
             const pyData = await getMediaFromPython();
+            const lineDevice = await getLineInStatus(); // Sprawdza czy telefon jest połączony
 
-            // Jeśli Python zwrócił dane o grającej muzyce
-            if (pyData && pyData.found && pyData.title) {
+            // 2. LOGIKA PRIORYTETÓW
+            
+            // A. Jeśli Windows GRA (Status: Playing) -> Windows ma priorytet
+            if (pyData && pyData.found && pyData.status === 'Playing') {
                 return res.json({
                     title: pyData.title,
                     artist: pyData.artist,
-                    status: pyData.status,
-                    // ZMIANA: Przekazujemy źródło z Pythona (np. "Spotify.exe"), a jak brak to "System"
+                    status: "Playing",
                     source: pyData.source || "System", 
-                    // ZMIANA: Przekazujemy okładkę z Pythona (Base64)
                     cover: pyData.cover || ""          
                 });
             }
 
-            // B. Jeśli system Windows nic nie zwrócił, sprawdź wejście liniowe (Bluetooth)
-            // (Zachowujemy Twoją starą logikę jako fallback)
-            const lineDevice = await getLineInStatus();
+            // B. Jeśli Windows NIE GRA (jest Paused lub Stopped), ale mamy BLUETOOTH
+            // -> Pokaż Bluetooth (traktujemy go jako Playing)
             if (lineDevice) {
                 return res.json({
                     title: "Audio Bluetooth",
-                    artist: lineDevice,
-                    status: "Playing",
-                    source: "Bluetooth"
+                    artist: lineDevice, // Nazwa telefonu
+                    status: "Playing",  // Wymuszamy status Playing dla BT
+                    source: "Bluetooth",
+                    type: "bluetooth"
                 });
             }
 
-            // C. Nic nie gra
+            // C. Jeśli ani Windows nie gra, ani nie ma BT, ale Windows jest zapauzowany
+            // -> Pokaż zapauzowane Spotify
+            if (pyData && pyData.found) {
+                 return res.json({
+                    title: pyData.title,
+                    artist: pyData.artist,
+                    status: pyData.status, // Paused
+                    source: pyData.source || "System", 
+                    cover: pyData.cover || ""          
+                });
+            }
+
+            // D. Nic nie gra
             res.json({ title: "", artist: "", status: "Paused", source: "None" });
 
         } catch (error) {
