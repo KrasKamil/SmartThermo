@@ -10,6 +10,8 @@
     min-width: 350px;
     transition: all 0.5s ease;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 40, 0.85);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
 }
 
 .media-info.hidden {
@@ -46,71 +48,34 @@
     color: #bbb;
 }
 
-
-/* Animacja Equalizera */
-
-.media-anim {
-    display: flex;
-    gap: 3px;
-    height: 15px;
-    align-items: flex-end;
-}
-
-.media-anim span {
-    width: 3px;
-    background: #00d2ff;
-    animation: bounce 1s infinite ease-in-out;
-}
-
-.media-anim span:nth-child(1) {
-    animation-delay: 0s;
-    height: 60%;
-}
-
-.media-anim span:nth-child(2) {
-    animation-delay: 0.2s;
-    height: 100%;
-}
-
-.media-anim span:nth-child(3) {
-    animation-delay: 0.4s;
-    height: 50%;
-}
-
-@keyframes bounce {
-    0%,
-    100% {
-        transform: scaleY(0.5);
-    }
-    50% {
-        transform: scaleY(1.0);
-    }
-}
-
 .mini-controls {
     display: flex;
-    gap: 5px;
+    gap: 8px;
     margin-right: 15px;
 }
 
 .mini-controls button {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+    border: none;
     color: white;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     transition: 0.2s;
+    outline: none;
 }
 
 .mini-controls button:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+    background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+    transform: scale(1.13);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(0, 210, 255, 0.18);
 }
 
 @media (max-width: 400px) {
@@ -134,22 +99,20 @@
 /* --- DUŻY PLAYER NA PULPICIE --- */
 
 .spotify-widget {
-    /* Usuwamy fixed i pozycjonowanie absolutne */
+    /* Upewniamy się, że korzysta z efektu szkła z utilities.css */
+    /* background jest definiowany przez klasę .glass-effect w HTML */
     position: relative;
     width: 100%;
-    /* Dopasuj do szerokości kolumny */
-    max-width: 400px;
-    /* Ale nie szerszy niż 400px */
+    max-width: 420px;
     margin: 20px auto;
-    /* Wyśrodkowanie i odstęp góra/dół */
     padding: 20px;
     border-radius: 20px;
     color: white;
-    /* Ukrywamy go domyślnie, JS go pokaże jak muzyka zagra */
-    display: none;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
 }
 
 
@@ -162,16 +125,18 @@
     width: 100%;
 }
 
-.track-info {
+.text-info {
     display: flex;
-    align-items: center;
-    gap: 20px;
-    text-align: left;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+    /* Zajmij resztę miejsca */
 }
 
 .album-art {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     border-radius: 10px;
     object-fit: cover;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -185,6 +150,22 @@
     cursor: pointer;
     transition: transform 0.2s;
     margin: 0 15px;
+}
+
+#current-artist {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+
+/* Tytuły */
+
+#current-track {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.2;
 }
 
 .controls button:hover {
@@ -203,12 +184,6 @@
     display: flex;
     align-items: center;
     gap: 15px;
-}
-
-.album-art {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
 }
 
 .text-info h3 {
@@ -247,4 +222,104 @@
     text-align: center;
     font-weight: bold;
     margin-top: 10px;
+}
+
+
+/* --- ANIMACJA (EQUALIZER) W NOWYM MIEJSCU --- */
+
+.media-anim {
+    display: flex;
+    align-items: flex-end;
+    height: 15px;
+    /* Mniejsza wysokość */
+    gap: 3px;
+    margin-top: 8px;
+    /* Odstęp od artysty */
+}
+
+.media-anim span {
+    display: block;
+    width: 4px;
+    background: #00d2ff;
+    /* Twój kolor niebieski */
+    border-radius: 2px;
+    animation: bounce 2.2s infinite ease-in-out;
+}
+
+
+/* Zatrzymanie animacji gdy muzyka nie gra (dodamy to w JS) */
+
+.media-anim.paused span {
+    animation-play-state: paused;
+    height: 3px !important;
+    /* Spłaszcz słupki gdy pauza */
+    transition: height 0.3s;
+}
+
+
+/* Przesunięcia czasowe słupków */
+
+.media-anim span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.media-anim span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.media-anim span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+
+/* Definicja animacji (jeśli jej nie masz w pliku) */
+
+@keyframes bounce {
+    0%,
+    100% {
+        height: 3px;
+    }
+    50% {
+        height: 15px;
+    }
+}
+
+
+/* Przyciski sterowania */
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.ctrl-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ctrl-btn:hover {
+    background: rgba(0, 210, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.ctrl-btn.play {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    background: #00d2ff;
+    /* Wyróżniony przycisk play */
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
 }

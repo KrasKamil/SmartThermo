@@ -17,8 +17,15 @@ export function openPopup(id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove('hidden');
-        el.style.display = 'flex';
-        syncSystemVolume();
+        el.style.removeProperty('display');
+        // Specjalnie dla overlayów, domyślnie flex, ale jeśli nie, ustaw flex
+        if (getComputedStyle(el).display === 'none') {
+            el.style.display = 'flex';
+        }
+        // Tylko overlay settings wymaga syncSystemVolume
+        if (id === 'settings-overlay') {
+            syncSystemVolume();
+        }
     }
 }
 

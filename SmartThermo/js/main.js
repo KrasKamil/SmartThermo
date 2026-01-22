@@ -1,20 +1,16 @@
 // js/main.js
-
 import { initClock } from './modules/clock.js';
 import { fetchWeather, clearWeatherData } from './modules/weather.js';
 import { handleSpotifyToken } from './modules/spotify.js';
-import { loadStations, toggleRadioPlay } from './modules/radio.js';
+import { loadStations, toggleRadioPlay, playRadio } from './modules/radio.js';
 import { checkSystemMedia, controlSystemMedia } from './modules/systemPlayer.js';
 import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
 import { initVoiceAssistant } from './modules/voice.js';
 import { state } from './modules/state.js';
 import {
     toggleTheme,
-    controlVolume,
     openPopup,
     closePopup,
-    updateVolumeVisuals,
-    setVolume,
     handleVolumeInput
 } from './modules/ui.js';
 
@@ -24,11 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
     handleSpotifyToken();
     loadStations();
     initVoiceAssistant();
+
+    // Sprawdzanie mediów co 3 sekundy
     setInterval(checkSystemMedia, 3000);
     checkSystemMedia();
 });
 
-// Eksporty do window (dla onclick w HTML)
+// Eksporty do window (aby HTML je widział)
 window.ClearData = clearWeatherData;
 window.toggleTheme = toggleTheme;
 window.openSpotifyPopup = () => openPopup('spotify-overlay');
@@ -37,24 +35,17 @@ window.openRadioPopup = () => openPopup('radio-overlay');
 window.closeRadioPopup = () => closePopup('radio-overlay');
 window.openSettingsPopup = () => openPopup('settings-overlay');
 window.closeSettingsPopup = () => closePopup('settings-overlay');
-window.controlVolume = controlVolume;
+window.handleVolumeInput = handleVolumeInput;
 window.scanBluetooth = scanBluetooth;
 window.connectBluetooth = connectBluetooth;
-window.controlSystemMedia = controlSystemMedia;
-window.updateVolumeVisuals = updateVolumeVisuals;
-window.setVolume = setVolume;
-window.handleVolumeInput = handleVolumeInput;
 
-
-
-// --- STEROWANIE MINI PLAYEREM (Radio vs System) ---
+// --- TO JEST FUNKCJA, KTÓREJ BRAKOWAŁO ---
 window.miniControl = (action) => {
     // 1. Jeśli gra RADIO INTERNETOWE
     if (state.activeSource === 'radio') {
-        if (action === 'play') {
+        if (action === 'play' || action === 'playpause') {
             toggleRadioPlay();
         } else if (action === 'next' || action === 'prev') {
-            // Obsługa zmiany stacji
             if (state.globalStationList.length > 0) {
                 let direction = (action === 'next') ? 1 : -1;
                 state.currentStationIndex += direction;
@@ -65,18 +56,19 @@ window.miniControl = (action) => {
 
                 const nextStation = state.globalStationList[state.currentStationIndex];
 
-                // Wywołaj playRadio z nowego indeksu (to też zaktualizuje klasę .active!)
-                // Symulujemy kliknięcie w kafelek, żeby logika .active zadziałała
-                const tile = document.getElementById(`station-tile-${state.currentStationIndex}`);
-                if (tile) tile.click();
-                else playRadio(nextStation.streamUrl, nextStation.title);
+                // Przełącz stację
+                playRadio(nextStation.streamUrl, nextStation.title);
             }
         }
     }
     // 2. W przeciwnym razie steruj SYSTEMEM (Spotify/BT)
     else {
-        if (action === 'play') controlSystemMedia('playpause');
-        if (action === 'next') controlSystemMedia('next');
-        if (action === 'prev') controlSystemMedia('prev');
+        // Mapowanie akcji 'play' na 'playpause' dla systemu Windows
+        let sysAction = action;
+        if (action === 'play') sysAction = 'playpause';
+
+        controlSystemMedia(sysAction);
     }
 };
+
+window.controlSystemMedia = controlSystemMedia; // Dla kompatybilności

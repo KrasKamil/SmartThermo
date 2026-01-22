@@ -159,13 +159,18 @@ export function controlSystemMedia(action) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action })
     });
-
-    // Szybka reakcja UI
+    // Optymistyczna aktualizacja UI
     if (action === 'playpause') {
         state.isPlaying = !state.isPlaying;
-        const playBtnIcon = document.querySelector('#play-pause-btn i');
-        if (playBtnIcon) {
-            playBtnIcon.className = state.isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        // Odśwież animację natychmiast
+        const anim = document.getElementById('music-anim');
+        const playBtn = document.querySelector('#play-pause-btn');
+        if (state.isPlaying) {
+            if (anim) anim.classList.remove('paused');
+            if (playBtn) playBtn.innerHTML = '⏸';
+        } else {
+            if (anim) anim.classList.add('paused');
+            if (playBtn) playBtn.innerHTML = '▶️';
         }
     }
 }

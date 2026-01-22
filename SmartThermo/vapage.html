@@ -17,6 +17,26 @@
     <div id="spotify-overlay">
         <div id="spotify-popup">
             <button class="close-btn" onclick="closeSpotifyPopup()">×</button>
+
+            <div style="text-align: center; color: white;">
+                <img src="style-css/img/spotify.png" style="width: 64px; margin-bottom: 20px;">
+                <h2>Spotify Connect</h2>
+                <p style="margin: 15px 0; color: #ccc;">Steruj muzyką z tego urządzenia lub otwórz aplikację.</p>
+
+                <a href="spotify:" class="spotify-btn" style="
+                    display: inline-block;
+                    background: #1DB954;
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 25px;
+                    border-radius: 30px;
+                    font-weight: bold;
+                    margin-top: 10px;
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    Otwórz Aplikację 🚀
+                </a>
+            </div>
         </div>
     </div>
 
@@ -80,11 +100,11 @@
     <div id="kontener">
 
         <button id="theme-button" onclick="toggleTheme()">
-            <img src="style-css/icon.svg" alt="Zmień motyw">
+            <img src="style-css/img/icon.svg" alt="Zmień motyw">
         </button>
 
         <button id="spotify-button" onclick="openSpotifyPopup()">
-            <img src="style-css/spotify.png" alt="Uruchom Spotify">
+            <img src="style-css/img/spotify.png" alt="Uruchom Spotify">
         </button>
         <button id="radio-button" onclick="openRadioPopup()">
             📻
@@ -166,37 +186,28 @@
                     <p>System Audio</p>
                     <a href="spotify:" class="spotify-btn">Otwórz aplikację 🎵</a>
                 </div>
+
                 <div id="player-view" style="display: none;">
                     <div class="track-info">
                         <img id="current-art" src="" alt="Okładka" class="album-art" />
+
                         <div class="text-info">
-                            <h3 id="current-track">Nie odtwarzam</h3>
-                            <p id="current-artist">Brak aktywności</p>
+                            <h3 id="current-track">Tytuł</h3>
+                            <p id="current-artist">Wykonawca</p>
+
+                            <div class="media-anim" id="music-anim">
+                                <span></span><span></span><span></span>
+                            </div>
                         </div>
                     </div>
+
                     <div class="controls">
-                        <button onclick="controlSystemMedia('prev')" class="ctrl-btn">⏮</button>
-                        <button id="play-pause-btn" onclick="controlSystemMedia('playpause')" class="ctrl-btn play">⏯</button>
-                        <button onclick="controlSystemMedia('next')" class="ctrl-btn">⏭</button>
+                        <button onclick="miniControl('prev')" class="ctrl-btn">⏮</button>
+
+                        <button id="play-pause-btn" onclick="miniControl('play')" class="ctrl-btn play">⏸</button>
+
+                        <button onclick="miniControl('next')" class="ctrl-btn">⏭</button>
                     </div>
-                </div>
-            </div>
-            <div id="mini-player" class="media-info glass-effect hidden">
-                <div class="media-icon" id="mini-icon">🎵</div>
-
-                <div class="media-text">
-                    <span id="mini-title">Brak muzyki</span>
-                    <span id="mini-subtitle">Oczekiwanie...</span>
-                </div>
-
-                <div class="mini-controls">
-                    <button onclick="miniControl('prev')">⏮</button>
-                    <button id="mini-play-btn" onclick="miniControl('play')">⏸</button>
-                    <button onclick="miniControl('next')">⏭</button>
-                </div>
-
-                <div class="media-anim" id="mini-anim">
-                    <span></span><span></span><span></span>
                 </div>
             </div>
 
