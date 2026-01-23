@@ -1,3 +1,36 @@
+import { toggleRadioPlay, playRadio } from './radio.js';
+
+// Funkcja miniControl - sterowanie radiem i systemem
+export function miniControl(action) {
+    // 1. Jeśli gra RADIO INTERNETOWE
+    if (state.activeSource === 'radio') {
+        if (action === 'play' || action === 'playpause') {
+            toggleRadioPlay();
+        } else if (action === 'next' || action === 'prev') {
+            if (state.globalStationList.length > 0) {
+                let direction = (action === 'next') ? 1 : -1;
+                state.currentStationIndex += direction;
+
+                // Pętla listy
+                if (state.currentStationIndex >= state.globalStationList.length) state.currentStationIndex = 0;
+                if (state.currentStationIndex < 0) state.currentStationIndex = state.globalStationList.length - 1;
+
+                const nextStation = state.globalStationList[state.currentStationIndex];
+
+                // Przełącz stację
+                playRadio(nextStation.streamUrl, nextStation.title);
+            }
+        }
+    }
+    // 2. W przeciwnym razie steruj SYSTEMEM (Spotify/BT)
+    else {
+        // Mapowanie akcji 'play' na 'playpause' dla systemu Windows
+        let sysAction = action;
+        if (action === 'play') sysAction = 'playpause';
+
+        controlSystemMedia(sysAction);
+    }
+}
 import { state } from './state.js';
 
 export async function checkSystemMedia() {

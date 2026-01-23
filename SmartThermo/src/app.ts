@@ -9,6 +9,8 @@ import spotifyRoutes from './routes/spotify';
 import bluetoothRoutes from './routes/bluetooth';
 import mediaRoutes from './routes/media';
 import debugRoutes from './routes/debug';
+import airRoutes from './routes/air';
+import dailyRoutes from './routes/daily';
 
 class App {
   public server: express.Application;
@@ -48,6 +50,8 @@ class App {
   this.server.use('/api', mediaRoutes); // Jeśli media.ts ma w sobie /media/now-playing, to będzie /api/media/now-playing
   this.server.use('/', spotifyRoutes); 
   this.server.use('/api/debug', debugRoutes); 
+  this.server.use('/api/air', airRoutes);
+  this.server.use('/api/daily', dailyRoutes);
 }
 }
 

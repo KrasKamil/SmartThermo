@@ -97,7 +97,9 @@
     </div>
 
     <div id="kontener">
-
+        <div id="naglowek">
+            <h1>Smart Thermo</h1>
+        </div>
         <button id="theme-button" onclick="toggleTheme()">
             <img src="style-css/img/icon.svg" alt="Zmień motyw">
         </button>
@@ -116,9 +118,7 @@
             🎙️
         </button>
 
-        <div id="naglowek">
-            <h1>Smart Thermo</h1>
-        </div>
+
 
         <div class="kolumna">
             <button id="updateBtn" onclick="ClearData();">🔄 Update Data</button>
@@ -160,9 +160,16 @@
                     <p id="error-text">Brak połączenia.</p>
                 </div>
             </div>
+
+            <div id="air-quality-widget" class="weather-card glass-effect" style="margin-top: 15px; padding: 15px;">
+                Loading Air Data...
+            </div>
         </div>
 
         <div class="kolumna">
+            <div id="daily-widget" class="weather-card glass-effect" style="margin-bottom: 20px; padding: 20px;">
+                Ładowanie dnia...
+            </div>
             <p id='main'></p>
 
             <div class="datetime">
