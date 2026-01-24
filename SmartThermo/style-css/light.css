@@ -331,3 +331,37 @@
 .light-mode .radio-tile .icon {
     filter: none;
 }
+
+
+/* --- DAILY WIDGET (Tryb Jasny) --- */
+
+.light-mode .daily-title {
+    color: #333 !important;
+    /* Ciemny nagłówek */
+}
+
+.light-mode .daily-subtitle {
+    color: #666 !important;
+    /* Szary podpis */
+}
+
+.light-mode .daily-names {
+    color: #007acc !important;
+    /* Ciemniejszy niebieski dla czytelności */
+}
+
+.light-mode .history-box {
+    background: rgba(0, 0, 0, 0.05) !important;
+    /* Ciemne półprzezroczyste tło */
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .history-date {
+    color: #d35400 !important;
+    /* Ciemniejszy pomarańczowy/złoty */
+}
+
+.light-mode .daily-text {
+    color: #444 !important;
+    /* Ciemny tekst opisu */
+}

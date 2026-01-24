@@ -1,3 +1,112 @@
+.collapsed #daily-widget-wrapper {
+    max-height: 0 !important;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.collapsed #collapse-daily-arrow {
+    transform: rotate(-180deg);
+}
+
+.collapse-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 1.2em;
+    color: #2E94E3;
+    outline: none;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.collapse-btn:hover {
+    color: #0077cc;
+}
+
+.collapse-btn .fa {
+    transition: transform 0.2s;
+}
+
+.collapsed #weather-table-wrapper {
+    max-height: 0 !important;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.collapsed #collapse-arrow {
+    transform: rotate(-180deg);
+}
+
+.last-update-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: rgba(230, 245, 255, 0.7);
+    border-radius: 12px;
+    margin: 8px 0 0 0;
+    padding: 7px 14px 7px 14px;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px #b6c8f622;
+}
+
+.last-update-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.last-update-label {
+    font-weight: bold;
+    color: #2E94E3;
+    white-space: nowrap;
+}
+
+.last-update-date {
+    color: #1a8cff;
+    font-weight: bold;
+    margin-left: 7px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.update-btn {
+    background: linear-gradient(135deg, #e0e7ef 60%, #b6eaff 100%);
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px #b6c8f633;
+    transition: box-shadow 0.2s, background 0.2s;
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.update-btn .fa-rotate-right {
+    color: #0077cc;
+    font-size: 1.2em;
+    transition: color 0.2s;
+}
+
+.update-btn:hover {
+    background: linear-gradient(135deg, #b6eaff 0%, #2E94E3 100%) !important;
+    box-shadow: 0 4px 16px #2E94E344;
+}
+
+.update-btn:hover .fa-rotate-right {
+    color: #fff !important;
+}
+
 .weather-card {
     padding: 25px;
     border-radius: 20px;
@@ -30,24 +139,6 @@
     text-align: right;
 }
 
-#updateBtn {
-    width: 100%;
-    max-width: 450px;
-    background-image: linear-gradient(to right, #2927ad, #2E94E3);
-    border: none;
-    color: white;
-    padding: 15px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    transition: transform 0.2s;
-}
-
-#updateBtn:hover {
-    transform: translateY(-2px);
-}
-
 
 /* Responsywność Pogody */
 
@@ -61,11 +152,6 @@
     .styled-table td {
         padding: 8px 10px;
         font-size: 14px;
-    }
-    #updateBtn {
-        padding: 10px;
-        font-size: 14px;
-        width: 95%;
     }
 }
 
@@ -95,4 +181,81 @@
         height: 200px;
         padding: 10px;
     }
+}
+
+
+/* --- NAPRAWIONY PASEK LAST UPDATE --- */
+
+.last-update-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Rozsuwa tekst i przycisk na boki */
+    padding: 8px 15px;
+    /* Odstęp wewnątrz komórki */
+    width: 100%;
+    /* Opcjonalnie: delikatne tło odróżniające ten pasek */
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0 0 10px 10px;
+    /* Zaokrąglenie tylko na dole */
+}
+
+
+/* Stylizacja tekstu */
+
+.update-text {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.update-text .label {
+    font-size: 0.85em;
+    color: #88aadd;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.update-text .time {
+    font-weight: bold;
+    color: #2E94E3;
+    font-size: 1em;
+}
+
+
+/* Stylizacja przycisku (mała kulka) */
+
+.refresh-icon-btn {
+    background: transparent;
+    /* Przezroczyste tło */
+    border: none;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    /* Idealne koło */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: #2E94E3;
+    /* Kolor ikonki */
+}
+
+
+/* Efekt najechania myszką */
+
+.refresh-icon-btn:hover {
+    background: rgba(46, 148, 227, 0.15);
+    /* Delikatne podświetlenie tła */
+    color: #fff;
+    /* Ikonka robi się biała */
+    transform: rotate(180deg);
+    /* Obrót ikonki */
+    box-shadow: 0 0 10px rgba(46, 148, 227, 0.3);
+}
+
+.refresh-icon-btn i {
+    font-size: 1.2em;
+    /* Wielkość samej ikonki */
 }

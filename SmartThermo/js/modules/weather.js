@@ -11,12 +11,12 @@ export async function fetchWeather() {
         setText("Pressure", data.pressure || "-");
         setText("Temp_out", data.temp_out || "-");
         setText("Wind", data.wind || "-");
-        setText("Last_update", data.due_date || "-");
+        setText("last-update-text", data.due_date || "-");
 
+        document.getElementById("weather-container").classList.remove("hidden");
         document.getElementById("weather-table").classList.remove("hidden");
         document.getElementById("error-message").classList.add("hidden");
 
-        updateChart();
 
     } catch (error) {
         console.error("Weather error:", error);
@@ -28,12 +28,19 @@ export async function fetchWeather() {
 
 export function clearWeatherData() {
     ["City", "Temp_ins", "Hum_ins", "Pressure", "Temp_out", "Wind", "Last_update"].forEach(id => setText(id, ""));
-    fetchWeather();
+    fetchWeather().then(() => updateChart());
 }
 
 function setText(id, text) {
     const el = document.getElementById(id);
-    if (el) el.innerText = text;
+    if (!el) return;
+    if (id === 'Last_update') {
+        // Szukamy span z id last-update-text i ustawiamy tylko jego tekst
+        const span = el.querySelector('#last-update-text');
+        if (span) span.textContent = text;
+    } else {
+        el.innerText = text;
+    }
 }
 
 async function updateChart() {
@@ -41,6 +48,8 @@ async function updateChart() {
         const res = await fetch('/api/weather/history');
         const historyData = await res.json();
 
+        const chartDiv = document.getElementById('chart-container');
+        if (chartDiv) chartDiv.classList.remove('hidden');
         const ctx = document.getElementById('tempChart').getContext('2d');
 
         // Tworzymy gradient dla wypełnienia (z góry na dół)
@@ -49,6 +58,12 @@ async function updateChart() {
         gradient.addColorStop(1, 'rgba(46, 148, 227, 0.0)');
 
         if (tempChart) tempChart.destroy();
+
+        // Wykrywanie trybu light/dark na podstawie klasy na body lub innym elemencie
+        const isLight = document.body.classList.contains('light-mode');
+        // Kolory dla light/dark
+        const axisColor = isLight ? '#222' : 'rgba(255, 255, 255, 0.6)';
+        const gridColor = isLight ? '#bbb' : 'rgba(255, 255, 255, 0.05)';
 
         tempChart = new Chart(ctx, {
             type: 'line',
@@ -73,7 +88,7 @@ async function updateChart() {
                 maintainAspectRatio: false,
                 interaction: { intersect: false, mode: 'index' },
                 plugins: {
-                    legend: { display: false }, // Ukrywamy legendę dla czystego wyglądu
+                    legend: { display: false },
                     tooltip: {
                         backgroundColor: 'rgba(20, 20, 20, 0.9)',
                         titleColor: '#00d2ff',
@@ -86,12 +101,12 @@ async function updateChart() {
                 },
                 scales: {
                     y: {
-                        grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
-                        ticks: { color: 'rgba(255, 255, 255, 0.6)', font: { size: 11 } }
+                        grid: { color: gridColor, drawBorder: false },
+                        ticks: { color: axisColor, font: { size: 11 } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: 'rgba(255, 255, 255, 0.6)', font: { size: 11 } }
+                        ticks: { color: axisColor, font: { size: 11 } }
                     }
                 }
             }

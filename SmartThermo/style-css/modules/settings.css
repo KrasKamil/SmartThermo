@@ -80,3 +80,46 @@ input[type=range] {
     background-position: center;
     background-repeat: no-repeat;
 }
+
+
+/* --- STYL DLA PRZEŁĄCZNIKA MOTYWU --- */
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+}
+
+.setting-label {
+    font-size: 1.1em;
+    color: #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-switch-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    /* Też zaokrąglony kwadrat, żeby pasował */
+    font-size: 0.9em;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(118, 75, 162, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.theme-switch-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(118, 75, 162, 0.6);
+}
+
+.theme-switch-btn:active {
+    transform: scale(0.95);
+}

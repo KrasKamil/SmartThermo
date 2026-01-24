@@ -148,3 +148,40 @@
 .voice-box .close-btn:hover {
     color: white;
 }
+
+
+/* --- DAILY WIDGET (Domyślny Tryb Ciemny) --- */
+
+.daily-title {
+    color: #fff;
+}
+
+.daily-subtitle {
+    color: #aaa;
+}
+
+.daily-names {
+    color: #00d2ff;
+}
+
+.history-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-date {
+    color: #f1c40f;
+}
+
+.daily-text {
+    color: #ddd;
+}
+
+#updateBtn:hover {
+    background: linear-gradient(135deg, #b6eaff 0%, #2E94E3 100%) !important;
+    box-shadow: 0 4px 16px #2E94E344;
+}
+
+#updateBtn:hover .fa-rotate-right {
+    color: #fff !important;
+}
