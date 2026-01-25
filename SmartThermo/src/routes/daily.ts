@@ -1,9 +1,12 @@
+// src/routes/daily.ts
 import { Router } from 'express';
 import axios from 'axios';
+import Parser from 'rss-parser';
 // Importujemy naszą lokalną bazę
 import { namedays } from '../data/imieniny'; 
 
 const router = Router();
+const parser = new Parser();
 
 router.get('/', async (req, res) => {
     try {
@@ -18,14 +21,12 @@ router.get('/', async (req, res) => {
         const imieniny = namedays[dateKey] || "Brak danych o imieninach";
 
         // 2. Wydarzenie historyczne
-        // ZMIANA: Używamy 'en.wikipedia.org', bo 'pl' nie ma tego API.
-        // ZMIANA: Dodajemy User-Agent (wymagane przez Wiki, inaczej mogą zablokować)
         const historyPromise = axios.get(
             `https://en.wikipedia.org/api/rest_v1/feed/onthisday/selected/${month}/${day}`,
             { 
                 timeout: 3000,
                 headers: {
-                    'User-Agent': 'MyDailyApp/1.0 (moj-email@example.com)' // Warto tu wpisać cokolwiek unikalnego
+                    'User-Agent': 'MyDailyApp/1.0 (moj-email@example.com)' 
                 }
             }
         );
@@ -40,20 +41,39 @@ router.get('/', async (req, res) => {
                 const selected = events[Math.floor(Math.random() * events.length)];
                 randomEvent = {
                     year: selected.year,
-                    // Tekst przyjdzie po angielsku. Można tu ewentualnie podpiąć szybkie tłumaczenie 
-                    // lub zostawić jak jest, skoro polskie API nie działa.
                     text: selected.text 
                 };
             }
         } catch (wikiError) {
             console.warn("Nie udało się pobrać historii z Wiki:", wikiError.message);
-            // Fallback - jeśli Wiki padnie, nie psujemy imienin
+        }
+
+        // 3. Wiadomości RSS
+        let news: any[] = [];
+        try {
+            // Ciekawszy feed: Google News PL - Nauka i Technologia
+            // Tech feed 
+            //const feedUrl = 'https://news.google.com/rss/headlines/section/topic/SCITECH?hl=pl&gl=PL&ceid=PL:pl';
+                    
+            const feedUrl = 'https://news.google.com/rss/headlines/section/topic/WORLD?hl=pl&gl=PL&ceid=PL:pl';
+            const feed = await parser.parseURL(feedUrl);
+            
+            // Pobieramy 3 elementy i mapujemy na obiekt (nie tylko tytuł!)
+            news = feed.items.slice(0, 3).map(item => ({
+                title: item.title,
+                link: item.link,
+                snippet: item.contentSnippet ? item.contentSnippet.substring(0, 100) + "..." : "Kliknij, aby przeczytać więcej."
+            }));
+        } catch (rssError) {
+            console.warn("Błąd RSS:", rssError.message);
+            news = [{ title: "Nie udało się pobrać wiadomości.", link: "#", snippet: "" }];
         }
 
         res.json({
             date: `${day}.${month}`,
             imieniny: imieniny,
-            event: randomEvent
+            event: randomEvent,
+            news: news // Teraz to tablica obiektów {title, link, snippet}
         });
 
     } catch (error) {
@@ -61,7 +81,8 @@ router.get('/', async (req, res) => {
         res.status(500).json({
             date: "Dzisiaj",
             imieniny: "Błąd systemu",
-            event: { year: 2026, text: "Awaria widgetu." }
+            event: { year: 2026, text: "Awaria widgetu." },
+            news: []
         });
     }
 });

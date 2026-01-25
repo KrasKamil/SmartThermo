@@ -19,5 +19,8 @@ export const state = {
     currentStationIndex: -1,
 
     // Ustawienia
-    use24HourFormat: false
+    use24HourFormat: false,
+
+    // Interwał odświeżania widgetu Daily(5 minut do testów)
+    dailyRefreshInterval: 30 * 60 * 1000
 };

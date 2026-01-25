@@ -1,4 +1,5 @@
 let tempChart = null;
+
 export async function fetchWeather() {
     try {
         const response = await fetch('/api/weather');
@@ -17,7 +18,6 @@ export async function fetchWeather() {
         document.getElementById("weather-table").classList.remove("hidden");
         document.getElementById("error-message").classList.add("hidden");
 
-
     } catch (error) {
         console.error("Weather error:", error);
         document.getElementById("weather-table").classList.add("hidden");
@@ -27,19 +27,36 @@ export async function fetchWeather() {
 }
 
 export function clearWeatherData() {
-    ["City", "Temp_ins", "Hum_ins", "Pressure", "Temp_out", "Wind", "Last_update"].forEach(id => setText(id, ""));
-    fetchWeather().then(() => updateChart());
+    ["City", "Temp_ins", "Hum_ins", "Pressure", "Temp_out", "Wind"].forEach(id => setText(id, ""));
+    fetchWeather().then(() => {
+        // Jeśli wiersz z wykresem jest otwarty, odświeżamy go
+        const row = document.getElementById('inline-chart-row');
+        if (row && row.style.display !== 'none') {
+            updateChart();
+        }
+    });
 }
 
 function setText(id, text) {
     const el = document.getElementById(id);
     if (!el) return;
-    if (id === 'Last_update') {
-        // Szukamy span z id last-update-text i ustawiamy tylko jego tekst
-        const span = el.querySelector('#last-update-text');
-        if (span) span.textContent = text;
-    } else {
-        el.innerText = text;
+    el.innerText = text;
+}
+
+export function initChartToggle() {
+    const btn = document.getElementById('toggle-inline-chart');
+    const row = document.getElementById('inline-chart-row');
+
+    if (btn && row) {
+        btn.onclick = () => {
+            const isHidden = row.style.display === 'none';
+            row.style.display = isHidden ? 'table-row' : 'none';
+            btn.classList.toggle('active', isHidden);
+
+            if (isHidden) {
+                updateChart();
+            }
+        };
     }
 }
 
@@ -48,22 +65,20 @@ async function updateChart() {
         const res = await fetch('/api/weather/history');
         const historyData = await res.json();
 
-        const chartDiv = document.getElementById('chart-container');
-        if (chartDiv) chartDiv.classList.remove('hidden');
+        if (!historyData || historyData.length === 0) return;
+
         const ctx = document.getElementById('tempChart').getContext('2d');
 
-        // Tworzymy gradient dla wypełnienia (z góry na dół)
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(46, 148, 227, 0.4)'); // Kolor #2E94E3 z Twoich styli
+        // Przywrócenie gradientu
+        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+        gradient.addColorStop(0, 'rgba(46, 148, 227, 0.4)');
         gradient.addColorStop(1, 'rgba(46, 148, 227, 0.0)');
 
-        if (tempChart) tempChart.destroy();
-
-        // Wykrywanie trybu light/dark na podstawie klasy na body lub innym elemencie
         const isLight = document.body.classList.contains('light-mode');
-        // Kolory dla light/dark
         const axisColor = isLight ? '#222' : 'rgba(255, 255, 255, 0.6)';
         const gridColor = isLight ? '#bbb' : 'rgba(255, 255, 255, 0.05)';
+
+        if (tempChart) tempChart.destroy();
 
         tempChart = new Chart(ctx, {
             type: 'line',
@@ -72,13 +87,11 @@ async function updateChart() {
                 datasets: [{
                     label: 'Temperatura',
                     data: historyData.map(d => d.temp),
-                    borderColor: '#00d2ff', // Jasny błękit
+                    borderColor: '#00d2ff',
                     borderWidth: 3,
                     pointBackgroundColor: '#2E94E3',
                     pointBorderColor: '#fff',
-                    pointHoverRadius: 6,
-                    pointRadius: 4,
-                    tension: 0.4, // Zaokrąglone linie
+                    tension: 0.4,
                     fill: true,
                     backgroundColor: gradient
                 }]
@@ -86,32 +99,34 @@ async function updateChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(20, 20, 20, 0.9)',
-                        titleColor: '#00d2ff',
-                        bodyColor: '#fff',
-                        borderColor: '#2E94E3',
-                        borderWidth: 1,
-                        displayColors: false,
-                        padding: 10
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     y: {
-                        grid: { color: gridColor, drawBorder: false },
-                        ticks: { color: axisColor, font: { size: 11 } }
+                        title: {
+                            display: true,
+                            text: 'Temp [°C]',
+                            color: axisColor,
+                            font: { size: 10, weight: 'bold' }
+                        },
+                        grid: { color: gridColor },
+                        ticks: { color: axisColor, font: { size: 9 } }
                     },
                     x: {
+                        title: {
+                            display: true,
+                            text: 'Godzina',
+                            color: axisColor,
+                            font: { size: 10, weight: 'bold' }
+                        },
                         grid: { display: false },
-                        ticks: { color: axisColor, font: { size: 11 } }
+                        ticks: { color: axisColor, font: { size: 9 } }
                     }
                 }
             }
         });
     } catch (e) {
-        console.error("Błąd podczas rysowania fancy wykresu:", e);
+        console.error("Błąd wykresu:", e);
     }
 }

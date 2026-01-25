@@ -1,6 +1,6 @@
 // js/main.js
 import { initClock } from './modules/clock.js';
-import { fetchWeather, clearWeatherData } from './modules/weather.js';
+import { fetchWeather, clearWeatherData, initChartToggle } from './modules/weather.js';
 import { handleSpotifyToken } from './modules/spotify.js';
 import { loadStations, toggleRadioPlay, playRadio } from './modules/radio.js';
 import { checkSystemMedia, controlSystemMedia, miniControl } from './modules/systemPlayer.js';
@@ -14,13 +14,12 @@ import {
     handleVolumeInput
 } from './modules/ui.js';
 import { initAirQuality, loadAirQuality } from './modules/air.js'
-import { initDaily } from './modules/daily.js';
+import { initDaily, startDailyInterval } from './modules/daily.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
     fetchWeather();
-    import ('./modules/weather.js').then(mod => mod.updateChart && mod.updateChart());
-    handleSpotifyToken();
+    initChartToggle();
     loadStations();
     initVoiceAssistant();
 
@@ -28,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(checkSystemMedia, 3000);
     checkSystemMedia();
     initAirQuality();
-    initDaily();
+    startDailyInterval();
+
 
     // Obsługa rozwijania/zwijania tabeli pogody
     const weatherContainer = document.getElementById('weather-container');

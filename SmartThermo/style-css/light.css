@@ -365,3 +365,33 @@
     color: #444 !important;
     /* Ciemny tekst opisu */
 }
+
+
+/* style-css/light.css */
+
+
+/* Styl dla kontenera wykresu w trybie jasnym */
+
+.light-mode .chart-container {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+
+/* Przycisk zwijania (Weather/Dzień) w trybie jasnym */
+
+.light-mode .collapse-btn {
+    color: #2E94E3 !important;
+}
+
+.light-mode .collapse-btn:hover {
+    color: #0056b3 !important;
+}
+
+
+/* Klasa pomocnicza ukrywająca elementy */
+
+.hidden {
+    display: none !important;
+}

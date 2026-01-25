@@ -69,3 +69,59 @@ h1 {
         width: 100%;
     }
 }
+
+
+/* style-css/modules/layout.css */
+
+#daily-widget-wrapper {
+    transition: max-height 0.4s ease-in-out, opacity 0.3s ease;
+    overflow: hidden;
+}
+
+
+/* Klasa pomocnicza, którą można sterować przez JS */
+
+.collapsed-content {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+#collapse-daily-arrow {
+    transition: transform 0.3s ease;
+}
+
+#weather-table-wrapper,
+#daily-widget-wrapper {
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    max-height: 1000px;
+    /* Wysokość wystarczająca na rozwinięty kontent */
+    overflow: hidden;
+    opacity: 1;
+}
+
+
+/* Stan zwinięty dla pogody i daily */
+
+#weather-container.collapsed #weather-table-wrapper,
+#daily-widget.collapsed #daily-widget-wrapper {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* Animacja strzałek (chevron) */
+
+#weather-container.collapsed #collapse-arrow,
+#daily-widget.collapsed #collapse-daily-arrow {
+    transform: rotate(-90deg);
+}
+
+
+/* Ukrywanie elementu na start (opcjonalnie dla wykresu przez klasę) */
+
+.hidden {
+    display: none !important;
+}

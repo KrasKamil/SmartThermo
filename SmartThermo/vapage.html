@@ -106,10 +106,11 @@
         </div>
     </div>
 
+    <div id="naglowek">
+        <h1>Smart Thermo</h1>
+    </div>
+
     <div id="kontener">
-        <div id="naglowek">
-            <h1>Smart Thermo</h1>
-        </div>
 
         <button id="settings-button" onclick="openSettingsPopup()" style="top: 280px;">
             ⚙️
@@ -142,8 +143,20 @@
                             <td id="City">-</td>
                         </tr>
                         <tr>
-                            <td>Temp Inside</td>
+                            <td style="display: flex; align-items: center; gap: 10px;">
+                                Temp Inside
+                                <button id="toggle-inline-chart" class="mini-expand-btn" title="Pokaż wykres">
+                                    <i class="fa fa-chart-line"></i>
+                                </button>
+                            </td>
                             <td id="Temp_ins">-</td>
+                        </tr>
+                        <tr id="inline-chart-row" style="display: none;">
+                            <td colspan="2" style="padding: 0; background: rgba(0,0,0,0.02);">
+                                <div class="inline-chart-wrapper">
+                                    <canvas id="tempChart"></canvas>
+                                </div>
+                            </td>
                         </tr>
                         <tr>
                             <td>Humidity</td>
@@ -184,7 +197,7 @@
                 </div>
             </div>
 
-            <div class="chart-container weather-card glass-effect" style="margin-top: 20px;">
+            <div class="chart-container weather-card glass-effect hidden" style="margin-top: 20px;">
                 <canvas id="tempChart"></canvas>
             </div>
 
@@ -194,15 +207,7 @@
         </div>
 
         <div class="kolumna">
-            <div id="daily-widget" class="weather-card glass-effect">
-                <button id="toggle-daily-widget" class="collapse-btn" title="Pokaż/ukryj szczegóły dnia" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; margin-bottom: 8px; font-size: 1.2em; color: #2E94E3;">
-                    <i id="collapse-daily-arrow" class="fa fa-chevron-down" style="transition: transform 0.2s;"></i>
-                    <span style="margin-left: 7px; font-weight: bold;">Dzień</span>
-                </button>
-                <div id="daily-widget-wrapper" style="transition: max-height 0.3s cubic-bezier(.4,2,.6,1), opacity 0.2s; overflow: hidden; max-height: 1000px; opacity: 1;">
-                    <div id="daily-widget-content" style="padding: 20px;">Ładowanie dnia...</div>
-                </div>
-            </div>
+
             <p id='main'></p>
 
             <div class="datetime">
@@ -254,6 +259,16 @@
                             <button onclick="miniControl('next')" class="btn-sml"><i class="fas fa-step-forward"></i></button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div id="daily-widget" class="weather-card glass-effect collapsed">
+                <button id="toggle-daily-widget" class="collapse-btn" title="Pokaż/ukryj szczegóły dnia" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; margin-bottom: 8px; font-size: 1.2em; color: #2E94E3;">
+                    <i id="collapse-daily-arrow" class="fa fa-chevron-down" style="transition: transform 0.2s;"></i>
+                    <span style="margin-left: 7px; font-weight: bold;">Day</span>
+                </button>
+                <div id="daily-widget-wrapper" style="transition: max-height 0.3s cubic-bezier(.4,2,.6,1), opacity 0.2s; overflow: hidden; max-height: 1000px; opacity: 1;">
+                    <div id="daily-widget-content" style="padding: 20px;">Loading daily data...</div>
                 </div>
             </div>
 
