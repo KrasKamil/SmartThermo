@@ -1,39 +1,29 @@
 {
-    "name": "rest-api-server",
-    "version": "1.0.0",
-    "main": "index.js",
+    "name": "smart-thermo-assistant",
+    "version": "2.0.0",
+    "main": "dist/server.js",
     "license": "MIT",
     "scripts": {
-        "build": "tsc --project ./",
-        "start:dev": "npx tsx watch src/server.ts",
-        "start:prod": "ts-node dist/server.js"
+        "dev": "npx tsx watch src/server.ts",
+        "build": "tsc",
+        "start": "npm run build && node dist/server.js",
+        "clean": "rimraf dist"
     },
     "dependencies": {
         "axios": "^1.13.2",
         "cors": "^2.8.5",
-        "dotenv": "^17.2.3",
+        "dotenv": "^16.0.3",
         "express": "^4.18.2",
         "loudness": "^0.4.2",
-        "mongo": "^0.1.0",
-        "mongodb": "^6.21.0",
-        "Parser": "^0.0.1",
-        "querystring": "^0.2.1",
-        "rss-parser": "^3.13.0",
-        "swagger-ui-express": "^5.0.1",
-        "telegraf": "^4.16.3",
-        "yamljs": "^0.3.0"
+        "telegraf": "^4.16.3"
     },
     "devDependencies": {
-        "@types/cors": "^2.8.19",
+        "@types/cors": "^2.8.13",
         "@types/express": "^4.17.17",
         "@types/node": "^18.15.11",
-        "@types/swagger-ui-express": "^4.1.8",
-        "@types/yamljs": "^0.2.34",
-        "nodemon": "^3.1.11",
-        "ts-node": "^1.7.1",
-        "tsx": "^4.21.0",
-        "typescript": "^5.0.3"
-    },
-    "repository": "https://github.com/KrasKamil/SmartThermo.git",
-    "author": "KrasKamil <96253806+KrasKamil@users.noreply.github.com>"
+        "rimraf": "^5.0.0",
+        "ts-node": "^10.9.1",
+        "tsx": "^4.7.1",
+        "typescript": "^5.0.4"
+    }
 }

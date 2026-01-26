@@ -110,3 +110,49 @@ export function handleVolumeInput(val) {
         setVolume(val);
     }, 100);
 }
+
+export function setupEventListeners() {
+    console.log("🔧 Uruchamianie Event Listenerów UI...");
+
+    // 1. Przycisk Historii Telegrama (w Ustawieniach)
+    const historyBtn = document.getElementById('btn-show-history');
+    if (historyBtn) {
+        historyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Wywołujemy funkcję z notes.js (która jest przypisana do window)
+            if (typeof window.openHistoryPopup === 'function') {
+                window.openHistoryPopup();
+            } else {
+                console.error("❌ Błąd: Funkcja window.openHistoryPopup nie jest dostępna.");
+            }
+        });
+    }
+
+    // 2. Obsługa suwaka głośności
+    const volumeSlider = document.getElementById('volume-slider');
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', (e) => {
+            handleVolumeInput(e.target.value);
+        });
+    }
+
+    // 3. Przycisk otwierania ustawień (jeśli masz taki w HTML, np. ikonka trybika)
+    const settingsBtn = document.getElementById('btn-settings'); // Sprawdź czy masz takie ID w HTML
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => openPopup('settings-overlay'));
+    }
+
+    // 4. Obsługa zamykania wszystkich popupów (krzyżyki i kliknięcie w tło)
+    document.querySelectorAll('.btn-close, .popup-overlay').forEach(el => {
+        el.addEventListener('click', (e) => {
+            // Jeśli kliknięto w tło (overlay) LUB w przycisk z klasą .btn-close
+            if (e.target === el || e.target.classList.contains('btn-close')) {
+                const overlay = el.closest('.popup-overlay');
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    overlay.classList.add('hidden');
+                }
+            }
+        });
+    });
+}

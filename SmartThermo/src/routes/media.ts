@@ -8,26 +8,27 @@ import { isWindows, getWindowsMedia, getLineInStatus } from '../helpers/system';
 
 const router = Router();
 
-// Ścieżka do nircmd.exe w głównym folderze projektu
-// process.cwd() zwraca folder, w którym uruchamiasz serwer
-const NIRCMD_PATH = path.join(process.cwd(), 'nircmd.exe');
-const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
-const PYTHON_SCRIPT_PATH = path.join(process.cwd(), 'get_media.py');
-const CONTROL_MEDIA_SCRIPT = path.join(process.cwd(), 'control_media.py');
+// 👇 ZMIANA 1: Definiujemy folder ze skryptami
+const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
 
+// 👇 ZMIANA 2: Aktualizujemy ścieżki do plików wewnątrz folderu scripts
+const NIRCMD_PATH = path.join(SCRIPTS_DIR, 'nircmd.exe');
+const PYTHON_SCRIPT_PATH = path.join(SCRIPTS_DIR, 'get_media.py');
+const CONTROL_MEDIA_SCRIPT = path.join(SCRIPTS_DIR, 'control_media.py');
+
+// 👇 WAŻNE: Środowisko wirtualne (env-media) zostało w głównym folderze, więc tu bez zmian
+const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
 
 
 // Funkcja wykonująca polecenie nircmd
 const runNirCmd = (args: string) => {
-    // Sprawdzamy czy plik istnieje, żeby nie sypać błędami w konsoli
     if (!fs.existsSync(NIRCMD_PATH)) {
         console.error(`❌ BŁĄD: Nie znaleziono pliku: ${NIRCMD_PATH}`);
-        console.error("   Upewnij się, że nircmd.exe jest w folderze obok package.json!");
         return;
     }
 
-    // Uruchamiamy nircmd z odpowiednimi argumentami
-    exec(`"${NIRCMD_PATH}" ${args}`, (error) => {
+    // Dodajemy cwd: SCRIPTS_DIR, choć dla nircmd to mniej istotne, to dobra praktyka
+    exec(`"${NIRCMD_PATH}" ${args}`, { cwd: SCRIPTS_DIR }, (error) => {
         if (error) console.error(`Błąd NirCmd (${args}):`, error.message);
     });
 };
@@ -38,11 +39,17 @@ const runPythonControl = (action: string) => {
         console.error("❌ Brak środowiska Python lub skryptu control_media.py");
         return;
     }
-    // Uruchamia: python.exe control_media.py [action]
-    exec(`"${VENV_PYTHON_PATH}" "${CONTROL_MEDIA_SCRIPT}" ${action}`, (error, stdout, stderr) => {
-        if (error) console.error(`Błąd sterowania (${action}):`, stderr);
-        else console.log(`🐍 Python Control: ${action} - OK`);
-    });
+    
+    // 👇 ZMIANA 3: Dodajemy { cwd: SCRIPTS_DIR }
+    // Dzięki temu Python widzi "universal_logger.py" leżący obok
+    exec(
+        `"${VENV_PYTHON_PATH}" "${CONTROL_MEDIA_SCRIPT}" ${action}`, 
+        { cwd: SCRIPTS_DIR }, 
+        (error, stdout, stderr) => {
+            if (error) console.error(`Błąd sterowania (${action}):`, stderr);
+            else console.log(`🐍 Python Control: ${action} - OK`);
+        }
+    );
 };
 
 const getMediaFromPython = (): Promise<any> => {
@@ -54,10 +61,13 @@ const getMediaFromPython = (): Promise<any> => {
             return;
         }
 
-        // --- ZMIANA TUTAJ: Dodajemy opcję { maxBuffer: 5 * 1024 * 1024 } (5MB) ---
+        // 👇 ZMIANA 4: Dodajemy cwd oraz maxBuffer
         exec(
             `"${VENV_PYTHON_PATH}" "${PYTHON_SCRIPT_PATH}"`, 
-            { maxBuffer: 1024 * 1024 * 5 }, // Zwiększamy limit bufora dla exec
+            { 
+                cwd: SCRIPTS_DIR,           // <-- Kluczowe dla importów w Pythonie
+                maxBuffer: 1024 * 1024 * 5  // 5MB bufora na okładki
+            }, 
             (error, stdout, stderr) => {
                 if (error) {
                     console.error("Błąd skryptu Python:", error.message);
@@ -99,19 +109,16 @@ router.get('/config', (req, res) => {
 // Służy do pobierania aktualnego stanu głośności z systemu dzięki bibliotece loudness
 router.get('/media/volume', async (req: Request, res: Response) => {
     try {
-        // Pobierz aktualną głośność (0-100)
         const vol = await loudness.getVolume();
-        // Pobierz status wyciszenia (true/false)
         const muted = await loudness.getMuted();
         
-        // Zwracamy 0 jeśli jest wyciszony systemowo, w przeciwnym razie aktualną wartość
         res.json({ 
             volume: muted ? 0 : vol,
             muted: muted
         });
     } catch (error) {
         console.error("Błąd odczytu głośności:", error);
-        res.json({ volume: 50 }); // Fallback w razie błędu
+        res.json({ volume: 50 });
     }
 });
 
@@ -123,7 +130,6 @@ router.post('/media/control', async (req: Request, res: Response) => {
         if (isWindows) {
             switch (action) {
                 // --- KATEGORIA 1: Odtwarzanie (Python WinSDK) ---
-                // Działa bezpośrednio na sesję Spotify/Systemu, a nie przez klawisze
                 case 'playpause':
                 case 'play':
                 case 'pause':
@@ -171,11 +177,11 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
         try {
             // 1. Pobierz statusy z obu źródeł
             const pyData = await getMediaFromPython();
-            const lineDevice = await getLineInStatus(); // Sprawdza czy telefon jest połączony
+            const lineDevice = await getLineInStatus(); 
 
             // 2. LOGIKA PRIORYTETÓW
             
-            // A. Jeśli Windows GRA (Status: Playing) -> Windows ma priorytet
+            // A. Jeśli Windows GRA -> Windows ma priorytet
             if (pyData && pyData.found && pyData.status === 'Playing') {
                 return res.json({
                     title: pyData.title,
@@ -186,25 +192,23 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
                 });
             }
 
-            // B. Jeśli Windows NIE GRA (jest Paused lub Stopped), ale mamy BLUETOOTH
-            // -> Pokaż Bluetooth (traktujemy go jako Playing)
+            // B. Jeśli Windows NIE GRA, ale mamy BLUETOOTH
             if (lineDevice) {
                 return res.json({
                     title: "Audio Bluetooth",
-                    artist: lineDevice, // Nazwa telefonu
-                    status: "Playing",  // Wymuszamy status Playing dla BT
+                    artist: lineDevice, 
+                    status: "Playing",  
                     source: "Bluetooth",
                     type: "bluetooth"
                 });
             }
 
-            // C. Jeśli ani Windows nie gra, ani nie ma BT, ale Windows jest zapauzowany
-            // -> Pokaż zapauzowane Spotify
+            // C. Windows zapauzowany
             if (pyData && pyData.found) {
                  return res.json({
                     title: pyData.title,
                     artist: pyData.artist,
-                    status: pyData.status, // Paused
+                    status: pyData.status, 
                     source: pyData.source || "System", 
                     cover: pyData.cover || ""          
                 });

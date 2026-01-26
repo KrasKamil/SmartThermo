@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 
-// Importy modułów
+// Importy modułów (Twoje istniejące trasy)
 import weatherRoutes from './routes/weather';
 import spotifyRoutes from './routes/spotify';
 import bluetoothRoutes from './routes/bluetooth';
@@ -18,7 +18,7 @@ class App {
 
   constructor() {
     this.server = express();
-    this.middlewares(); // Tutaj ładujemy logger
+    this.middlewares();
     this.routes();
   }
 
@@ -26,9 +26,9 @@ class App {
     this.server.use(cors());
     this.server.use(express.json());
     
-    // --- DODAJ TEN FRAGMENT (LOGGER) ---
+    // --- LOGGER (Twój istniejący) ---
     this.server.use((req, res, next) => {
-      // Wyłącz logowanie dla GET /api/media/now-playing
+      // Wyłącz logowanie dla GET /api/media/now-playing (żeby nie spamowało konsoli)
       if (req.method === 'GET' && req.originalUrl.startsWith('/api/media/now-playing')) {
         return next();
       }
@@ -40,21 +40,30 @@ class App {
       });
       next();
     });
-    // ------------------------------------
 
-    this.server.use(express.static(path.join(__dirname, '../')));
+    // --- ZMIANA: Obsługa folderu PUBLIC ---
+    // Wskazujemy folder 'public' jako miejsce, gdzie leżą pliki HTML, CSS, JS, Sounds, Media
+    const publicPath = path.join(__dirname, '../public');
+    this.server.use(express.static(publicPath));
   }
 
   routes() {
-  this.server.use('/api/weather', weatherRoutes); // To odpowiada za /api/weather
-  this.server.use('/api/bluetooth', bluetoothRoutes);
-  this.server.use('/api', mediaRoutes); // Jeśli media.ts ma w sobie /media/now-playing, to będzie /api/media/now-playing
-  this.server.use('/', spotifyRoutes); 
-  this.server.use('/api/debug', debugRoutes); 
-  this.server.use('/api/air', airRoutes);
-  this.server.use('/api/daily', dailyRoutes);
-  this.server.use('/api/notes', notesRoutes);
-}
+    // API Routes
+    this.server.use('/api/weather', weatherRoutes);
+    this.server.use('/api/bluetooth', bluetoothRoutes);
+    this.server.use('/api', mediaRoutes);
+    this.server.use('/api/spotify', spotifyRoutes);
+    this.server.use('/api/debug', debugRoutes);
+    this.server.use('/api/air', airRoutes);
+    this.server.use('/api/daily', dailyRoutes);
+    this.server.use('/api/notes', notesRoutes);
+
+    // --- ZMIANA: Obsługa Strony Głównej ---
+    // Jeśli ktoś wejdzie na "localhost:8888/", wyślij mu vapage.html
+    this.server.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, '../public/vapage.html'));
+    });
+  }
 }
 
 export default new App().server;

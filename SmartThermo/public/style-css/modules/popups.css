@@ -1,0 +1,352 @@
+/* --- OGÓLNE STYLI DLA POPUPÓW --- */
+
+#spotify-overlay,
+#radio-overlay,
+#settings-overlay {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 20, 40, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-centered {
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 3000;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.popup-bordered {
+    border: 2px solid #00d2ff;
+    box-shadow: 0 0 24px rgba(0, 210, 255, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
+    background: rgba(20, 30, 50, 0.92);
+    backdrop-filter: blur(16px);
+    border-radius: 22px;
+    padding: 32px 28px 28px 28px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+
+/* --- LISTA BLUETOOTH --- */
+
+.bt-item {
+    background: rgba(255, 255, 255, 0.1);
+    margin-bottom: 5px;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bt-item button {
+    background: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.bt-item button:hover {
+    background: #45a049;
+}
+
+
+/* --- VOICE OVERLAY (Mikrofon) --- */
+
+#voice-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.voice-box {
+    padding: 40px;
+    border-radius: 50%;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background: rgba(20, 20, 20, 0.9);
+}
+
+#voice-status {
+    margin-top: 20px;
+    font-size: 18px;
+    color: white;
+    font-weight: bold;
+    z-index: 2;
+}
+
+.pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 3px solid #4CAF50;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 20px #4CAF50;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+}
+
+.voice-box .close-btn {
+    top: 15px;
+    right: 25px;
+    color: #aaa;
+    font-size: 24px;
+    z-index: 10;
+}
+
+.voice-box .close-btn:hover {
+    color: white;
+}
+
+
+/* --- DAILY WIDGET (Domyślny Tryb Ciemny) --- */
+
+.daily-title {
+    color: #fff;
+}
+
+.daily-subtitle {
+    color: #aaa;
+}
+
+.daily-names {
+    color: #00d2ff;
+}
+
+.history-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-date {
+    color: #f1c40f;
+}
+
+.daily-text {
+    color: #ddd;
+}
+
+#updateBtn:hover {
+    background: linear-gradient(135deg, #b6eaff 0%, #2E94E3 100%) !important;
+    box-shadow: 0 4px 16px #2E94E344;
+}
+
+#updateBtn:hover .fa-rotate-right {
+    color: #fff !important;
+}
+
+
+/* =========================================
+   HISTORIA TELEGRAMA - FULL PRESTIGE
+   ========================================= */
+
+
+/* 1. TŁO I CENTROWANIE */
+
+#history-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    /* Ciemne tło */
+    backdrop-filter: blur(8px);
+    /* Rozmycie tła */
+    z-index: 9999 !important;
+    /* Centrowanie */
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Wymuszenie flexa, gdy JS włącza widoczność */
+
+#history-overlay[style*="display: flex"] {
+    display: flex !important;
+}
+
+
+/* 2. GŁÓWNE OKNO */
+
+#history-overlay .popup-content {
+    margin: 0 !important;
+    width: 500px;
+    max-width: 90%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    /* Wygląd okna */
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border: 1px solid #444;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+    border-radius: 16px;
+    padding: 25px;
+}
+
+#history-overlay h3 {
+    text-align: center;
+    color: #fff;
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+    margin-top: 0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+
+/* 3. LISTA WIADOMOŚCI */
+
+#history-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 15px;
+    /* Miejsce na scrollbar */
+    margin: 15px 0;
+}
+
+
+/* =========================================
+   👇 STYLIZACJA "FAJNYCH OKIENEK" (WIADOMOŚCI)
+   ========================================= */
+
+.history-item {
+    background: rgba(255, 255, 255, 0.06);
+    /* Szklany efekt */
+    border-radius: 12px;
+    /* Zaokrąglenia */
+    padding: 14px;
+    margin-bottom: 12px;
+    border-left: 4px solid #00d2ff;
+    /* Niebieski pasek akcentu */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    /* Cień pod wiadomością */
+    transition: transform 0.2s ease, background 0.2s;
+    position: relative;
+}
+
+
+/* Efekt po najechaniu myszką na wiadomość */
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+    /* Lekkie przesunięcie w prawo */
+}
+
+
+/* Ważne wiadomości (z wykrzyknikiem) */
+
+.history-item.urgent {
+    border-left-color: #ff4757;
+    background: rgba(255, 71, 87, 0.1);
+}
+
+.history-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #888;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.history-author {
+    color: #00d2ff;
+    /* Kolor autora */
+}
+
+.history-item.urgent .history-author {
+    color: #ff4757;
+    /* Czerwony autor dla pilnych */
+}
+
+.history-text {
+    color: #eee;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+
+/* =========================================
+   PREMIUM SCROLLBAR (Niebieski po najechaniu)
+   ========================================= */
+
+#history-list::-webkit-scrollbar {
+    width: 10px;
+}
+
+#history-list::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 5px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+#history-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 5px;
+    border: 1px solid #2a2a2a;
+    transition: background 0.3s;
+}
+
+#history-list::-webkit-scrollbar-thumb:hover {
+    background: #00d2ff;
+    /* Świeci na niebiesko */
+    border-color: #00d2ff;
+    box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+}

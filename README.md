@@ -1,153 +1,174 @@
-# Smart Thermo
+# 🌡️ Smart Thermo Assistant
 
-Smart Thermo to nowoczesny system asystenta termicznego z interfejsem webowym, obsługą audio, Spotify, Bluetooth, pogodą i sterowaniem systemowym.
+**Smart Thermo** to zaawansowany dashboard i asystent domowy, łączący sterowanie multimediami, monitoring pogody, integrację z Telegramem i diagnostykę systemową. Zaprojektowany do działania na Windows oraz Raspberry Pi/Linux.
 
-## Wymagania
-- Node.js (zalecane: v18+)
-- Python 3.10+ (zalecane venv)
-- npm
-- Przeglądarka Chrome/Edge/Firefox
+![Status](https://img.shields.io/badge/Status-Active-success)
+![Node](https://img.shields.io/badge/Node.js-v18%2B-green)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![License](https://img.shields.io/badge/License-MIT-orange)
 
-## Struktura projektu
-- `env-media/` — wirtualne środowisko Python do obsługi audio/systemu
-- `venv/` — drugie środowisko Python do pozostałych skryptów
-- `src/` — backend Node.js (TypeScript, API, serwer)
-- `js/` — frontend JavaScript (widgety, UI)
-- `style-css/` — style CSS (dark/light, animacje)
-- `vapage.html` — główny plik strony
-- `.env` — konfiguracja środowiska (np. klucze API, porty)
-- `requirements.txt` — zależności Python
-- `package.json` — zależności Node.js
-- `get_media.py`, `control_media.py` — skrypty do obsługi audio/systemu
-- `universal_logger.py` — logowanie i monitoring
-- `nircmd.exe` — narzędzie do sterowania systemem Windows
+---
 
-## Funkcje
-- Odtwarzanie muzyki z systemu, Spotify, Bluetooth
-- Widgety: Spotify, radio, pogoda, sterowanie audio
-- Sterowanie systemem (play/pause, głośność, next/prev)
-- Obsługa API pogodowego
-- Logowanie zdarzeń i błędów
-- Tryb jasny/ciemny, nowoczesny UI
-- Integracja z .env (klucze, porty, konfiguracja)
+## 🚀 Możliwości
 
-## Instalacja
+* **🎵 Centrum Multimedialne:**
+    * Sterowanie głośnością systemu (Windows/Linux).
+    * Integracja z **Spotify** (OAuth).
+    * Wykrywanie aktualnie odtwarzanych utworów (System & Browser).
+    * Obsługa radia internetowego.
+* **📡 Łączność:**
+    * Skaner urządzeń **Bluetooth** (wykrywanie obecności domowników).
+    * Integracja z botem **Telegram** (powiadomienia, wysyłanie notatek na ekran).
+* **🌦️ Warunki Otoczenia:**
+    * Pogoda (OpenWeatherMap).
+    * Jakość powietrza (Air Quality).
+    * Statystyki dzienne (Wykresy Chart.js).
+* **🎨 Nowoczesny UI:**
+    * Tryb Jasny / Ciemny (Dark/Light Mode).
+    * Responsywny interfejs (Mobile/Desktop).
+    * Animacje i szklane efekty (Glassmorphism).
 
-### 1. Utwórz dwa środowiska Python
+---
 
-```bash
-python -m venv env-media
-python -m venv venv
+## 📂 Struktura Projektu
+
+Projekt został zoptymalizowany pod kątem separacji warstw (Frontend/Backend/Scripts).
+
+```text
+SmartThermo/
+├── dist/               # Skompilowany kod serwera (generowany automatycznie)
+├── public/             # 🌐 FRONTEND (Widoczny dla przeglądarki)
+│   ├── js/             # Logika klienta (moduły, widgety)
+│   ├── style-css/      # Style (main, modules, light-mode)
+│   ├── media/          # Zasoby audio (muzyka)
+│   ├── sounds/         # Dźwięki systemowe (alarmy, powiadomienia)
+│   └── vapage.html     # Główny widok aplikacji
+├── scripts/            # 🐍 BACKEND TOOLS (Python & Utils)
+│   ├── control_media.py # Sterowanie mediami (WinSDK)
+│   ├── get_media.py     # Pobieranie metadanych (Okładki, Tytuły)
+│   └── nircmd.exe       # Narzędzie do głośności (Windows)
+├── src/                # ⚙️ BACKEND CORE (TypeScript)
+│   ├── routes/         # Endpointy API (Express)
+│   ├── helpers/        # Funkcje pomocnicze
+│   ├── server.ts       # Punkt startowy serwera
+│   └── app.ts          # Konfiguracja Express
+├── jsons/              # Baza danych (Historia notatek, ustawienia)
+└── env-media/          # Wirtualne środowisko Python
 ```
 
-Zainstaluj zależności:
+---
+
+## 🛠️ Wymagania
+
+1. **Node.js**: Wersja 18 lub nowsza.
+2. **Python**: Wersja 3.10+ (zalecane dla obsługi `winsdk`).
+3. **System**: Windows 10/11 (dla pełnej obsługi multimediów) lub Linux (ograniczona obsługa WinSDK).
+
+---
+
+## 📥 Instalacja
+
+### 1. Klonowanie i zależnosci Node.js
 
 ```bash
-# Aktywuj env-media
-source env-media/bin/activate  # Linux/Mac
-env-media\Scripts\activate    # Windows
-pip install -r requirements.txt
-
-# Aktywuj venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate    # Windows
-pip install -r requirements.txt
-```
-
-### 2. Instalacja zależności Node.js
-
-```bash
+git clone https://github.com/TwojUser/SmartThermo.git
+cd SmartThermo
 npm install
 ```
 
-### 3. Konfiguracja pliku `.env`
+### 2. Konfiguracja Python
 
-Utwórz plik `.env` w głównym katalogu i dodaj wymagane zmienne środowiskowe, np.:
-
-```
-PORT=8080
-SPOTIFY_CLIENT_ID=twoj_client_id
-SPOTIFY_CLIENT_SECRET=twoj_client_secret
-API_KEY=twoj_api_key
-```
-
-### 4. Budowanie i uruchamianie strony
-
-#### Backend (Node.js)
+Projekt wymaga środowiska wirtualnego dla skryptów obsługujących media w Windows.
 
 ```bash
-npm run build   # kompilacja TypeScript
-npm start       # uruchomienie serwera
+# Tworzenie środowiska
+python -m venv env-media
+
+# Aktywacja (Windows)
+.\env-media\Scripts\activate
+
+# Instalacja zależności
+pip install -r requirements.txt
 ```
 
-#### Frontend
+### 3. Konfiguracja Zmiennych (.env)
 
-Plik `vapage.html` jest główną stroną. Skrypty JS i CSS są ładowane automatycznie.
+Utwórz plik `.env` w głównym katalogu i uzupełnij go wg wzoru:
 
-#### Python (media/system)
+```ini
+PORT=8888
+CLOCK_FORMAT=24
 
-Aktywuj środowisko `env-media` i uruchom odpowiednie skrypty (np. obsługa audio, API systemowe).
+# --- API POGODY ---
+OPENWEATHER_API_KEY=twoj_klucz_openweather
+LAT=50.06
+LON=19.94
 
-## Użytkowanie
-- Strona dostępna pod adresem `http://localhost:PORT` (PORT z `.env`)
-- Widgety: Spotify, radio, pogoda, sterowanie audio
-- Możliwość sterowania systemem i odtwarzaniem muzyki
-- Logi dostępne w pliku `universal_logger.py` oraz konsoli
-- Obsługa przez przeglądarkę i API
+# --- SPOTIFY ---
+SPOTIFY_CLIENT_ID=twoj_id
+SPOTIFY_CLIENT_SECRET=twoj_sekret
+SPOTIFY_REDIRECT_URI=http://localhost:8888/api/spotify/callback
 
-## Integracje i API
-- Spotify: wymaga kluczy w `.env`
-- Pogoda: wymaga klucza API
-- Bluetooth: obsługa przez system i JS
-- System audio: obsługa przez skrypty Python i nircmd.exe
-
-## Testowanie
-- Testy manualne: uruchom stronę, sprawdź widgety, API, sterowanie
-- Logi błędów i zdarzeń: sprawdź plik logów oraz konsolę
-- W razie problemów sprawdź:
-  - Poprawność pliku `.env`
-  - Aktywację odpowiedniego venv
-  - Dostępność portu
-  - Uprawnienia do nircmd.exe
-
-## FAQ
-**Jak zmienić port?**
-Zmień wartość `PORT` w pliku `.env`.
-
-**Jak dodać własny widget?**
-Dodaj plik JS w folderze `js/modules/` i zarejestruj w `main.js`.
-
-**Jak dodać nową integrację API?**
-Dodaj klucz do `.env`, napisz obsługę w `src/routes/` i frontend w `js/modules/`.
-
-**Jak uruchomić tylko backend?**
-`npm start` (Node.js)
-
-**Jak uruchomić tylko skrypty Python?**
-Aktywuj odpowiedni venv i uruchom skrypt np. `python get_media.py`
-
-## Przykłady użycia
-- Odtwarzanie muzyki: kliknij Spotify lub radio, steruj z poziomu strony
-- Zmiana głośności: użyj suwaka w ustawieniach
-- Aktualizacja pogody: kliknij Update Data
-- Sterowanie systemem: przyciski play/pause/next/prev
-
-## Troubleshooting
-- Sprawdź logi w konsoli i pliku logów
-- Upewnij się, że oba venvy są aktywne
-- Sprawdź uprawnienia do plików i portów
-- W razie problemów z API sprawdź klucze w `.env`
-
-## Dokumentacja i linki
-- [Node.js](https://nodejs.org/)
-- [Python](https://www.python.org/)
-- [Spotify API](https://developer.spotify.com/documentation/web-api/)
-- [Chart.js](https://www.chartjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-
-## Autor
-KrasKamil
+# --- TELEGRAM BOT ---
+TELEGRAM_BOT_TOKEN=twoj_token_bota
+# Opcjonalnie (jeśli sieć blokuje API Telegrama):
+# TELEGRAM_API_ROOT=https://twoje-proxy.com
+```
 
 ---
-Jeśli masz pytania lub chcesz rozwinąć projekt, napisz na GitHub!
+
+## 🚀 Uruchamianie
+
+W projekcie zdefiniowano proste komendy startowe w `package.json`.
+
+### 👨‍💻 Tryb Deweloperski (Development)
+
+Uruchamia serwer z funkcją "Hot Reload" (restartuje się po zmianie kodu) oraz wyświetla pełne logi i listę endpointów.
+
+```bash
+npm run dev
+```
+
+### 🏭 Tryb Produkcyjny (Production)
+
+Automatycznie kompiluje kod TypeScript do folderu `dist` i uruchamia zoptymalizowaną wersję serwera.
+
+```bash
+npm start
+```
+
+---
+
+## 📡 API Endpoints
+
+Serwer udostępnia REST API. Oto najważniejsze punkty końcowe (dostępne po uruchomieniu):
+
+| Metoda | Endpoint | Opis |
+| --- | --- | --- |
+| `GET` | `/` | Główny interfejs (Dashboard) |
+| `GET` | `/api/weather` | Aktualna pogoda i prognoza |
+| `GET` | `/api/media/now-playing` | Informacje o utworze (Tytuł, Autor, Okładka) |
+| `POST` | `/api/media/control` | Sterowanie (Play, Pause, Volume, Next) |
+| `GET` | `/api/notes/history` | Historia wiadomości z Telegrama |
+| `GET` | `/api/bluetooth/scan` | Skanowanie urządzeń w pobliżu |
+
+---
+
+## 🐛 Troubleshooting
+
+**1. Błąd: `Cannot find module ...` w Pythonie**  
+Upewnij się, że folder `env-media` istnieje w głównym katalogu projektu, a ścieżki w `src/routes/media.ts` wskazują na `env-media/Scripts/python.exe`.
+
+**2. Błąd: Nie widać okładek albumów**  
+Skrypty Python w folderze `scripts/` muszą mieć dostęp do biblioteki `winsdk`. Sprawdź, czy zainstalowałeś `pip install winsdk`.
+
+**3. Telegram nie działa**  
+Sprawdź, czy Twój dostawca internetu nie blokuje `api.telegram.org`. W razie potrzeby użyj zmiennej `TELEGRAM_API_ROOT` w `.env`.
+
+---
+
+## 👨‍💻 Autor
+
+**KrasKamil**  
+Projekt rozwijany hobbystycznie. Pull requesty mile widziane!
 

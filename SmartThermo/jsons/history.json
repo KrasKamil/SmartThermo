@@ -1,8 +1,14 @@
 [
   {
-    "text": "No co",
+    "text": "Test",
     "author": "Kamil",
-    "timestamp": 1769428229652,
+    "timestamp": 1769433663364,
+    "visible": true
+  },
+  {
+    "text": "Hello",
+    "author": "Kamil",
+    "timestamp": 1769431624373,
     "visible": true
   }
 ]

@@ -9,7 +9,8 @@ import {
     toggleTheme,
     openPopup,
     closePopup,
-    handleVolumeInput
+    handleVolumeInput,
+    setupEventListeners
 } from './modules/ui.js';
 import { initAirQuality, loadAirQuality } from './modules/air.js';
 import { initDaily, startDailyInterval } from './modules/daily.js';
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Inicjalizacja notatek i historii (TO JEST KLUCZOWE DLA PRZYCISKU)
     initNotes();
+    setupEventListeners();
 
     // Obsługa rozwijania/zwijania tabeli pogody
     const weatherContainer = document.getElementById('weather-container');

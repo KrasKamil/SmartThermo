@@ -5,21 +5,33 @@ import dns from 'dns';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 dotenv.config();
 
+// Wymuszenie IPv4 (częsty problem z Node 17+ i Telegramem)
 try { dns.setDefaultResultOrder('ipv4first'); } catch(e) {}
 
 const router = Router();
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN|| 'Brak tokena';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'Brak tokena';
 const HISTORY_DIR = path.join(process.cwd(), 'jsons');
 const HISTORY_FILE = path.join(HISTORY_DIR, 'history.json');
+
+// --- KONFIGURACJA API ---
+// Jeśli masz blokadę, możesz tu wpisać adres proxy, np. własny serwer
+const TELEGRAM_API_ROOT = process.env.TELEGRAM_API_ROOT || 'https://api.telegram.org';
 
 if (TELEGRAM_TOKEN === 'Brak tokena') {
     console.error('❌ Błąd: Brak tokena Telegrama w zmiennych środowiskowych.');
     process.exit(1);
 }
-const bot = new Telegraf(TELEGRAM_TOKEN);
+
+// Konfiguracja bota (Telegraf) z opcjonalnym API Root
+const bot = new Telegraf(TELEGRAM_TOKEN, {
+    telegram: {
+        apiRoot: TELEGRAM_API_ROOT // To naprawia wysyłanie wiadomości jeśli API jest zmienione
+    }
+});
 
 // 👇 WPISZ SWOJE ID 👇
 const ALLOWED_USERS: number[] = [
@@ -44,13 +56,10 @@ let activeNote: Note = {
 let history: Note[] = [];
 
 // --- FUNKCJE PLIKOWE (Persistence) ---
-
-// 1. Wczytywanie historii przy starcie
 function loadHistory() {
     try {
         if (fs.existsSync(HISTORY_FILE)) {
             const rawData = fs.readFileSync(HISTORY_FILE, 'utf-8');
-            // Zabezpieczenie przed pustym plikiem
             if (!rawData.trim()) {
                 history = [];
                 return;
@@ -58,7 +67,6 @@ function loadHistory() {
             history = JSON.parse(rawData);
             console.log(`📂 Wczytano ${history.length} wiadomości z historii.`);
         } else {
-            // Jeśli plik nie istnieje, upewnij się, że folder istnieje (na przyszłość)
             if (!fs.existsSync(HISTORY_DIR)) {
                 fs.mkdirSync(HISTORY_DIR, { recursive: true });
             }
@@ -70,29 +78,22 @@ function loadHistory() {
     }
 }
 
-// 2. Zapisywanie historii na dysk
 function saveHistory() {
     try {
-        // NAPRAWA: Najpierw upewnij się, że folder 'jsons' istnieje!
         if (!fs.existsSync(HISTORY_DIR)) {
             fs.mkdirSync(HISTORY_DIR, { recursive: true });
         }
-
-        // Zapisz ładnie sformatowany JSON
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8');
     } catch (error) {
         console.error("❌ Błąd zapisu historii:", error);
     }
 }
 
-// Uruchom wczytywanie przy starcie skryptu
 loadHistory();
-
 
 // --- API ---
 router.get('/', (req, res) => res.json(activeNote));
 
-// Endpoint historii (czyta z pamięci RAM, która jest zsynchronizowana z plikiem)
 router.get('/history', (req, res) => {
     res.json(history);
 });
@@ -102,15 +103,16 @@ router.post('/clear', (req, res) => {
     res.json({ success: true });
 });
 
-
 // --- LOGIKA BOTA ---
 let offset = 0;
 
 async function runLoop() {
     try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/getUpdates?offset=${offset}&timeout=10`;
-        const response = await fetch(url);
-        const data = await response.json() as { ok: boolean, result: any[] };
+        // Używamy zdefiniowanego API ROOT (domyślnie oficjalny, ale można zmienić w .env)
+        const url = `${TELEGRAM_API_ROOT}/bot${TELEGRAM_TOKEN}/getUpdates?offset=${offset}&timeout=10`;
+        
+        const response = await axios.get(url);
+        const data = response.data as { ok: boolean, result: any[] };
 
         if (data.ok && data.result.length > 0) {
             for (const update of data.result) {
@@ -121,9 +123,11 @@ async function runLoop() {
                     const author = update.message.from.first_name;
                     const chatId = update.message.chat.id;
 
-                    // Blokada dostępu
+                    console.log(`📩 Nowa wiadomość od ${author} (${chatId}): ${text}`);
+
                     if (ALLOWED_USERS.length > 0 && !ALLOWED_USERS.includes(chatId)) {
-                        bot.telegram.sendMessage(chatId, "⛔ Brak dostępu.").catch(() => {});
+                        console.log(`⛔ Blokada dostępu dla: ${chatId}`);
+                        bot.telegram.sendMessage(chatId, "⛔ Brak dostępu.").catch((err) => console.error("Błąd wysyłania (Auth):", err));
                         continue;
                     }
 
@@ -134,28 +138,35 @@ async function runLoop() {
                         visible: true
                     };
 
-                    // 1. Ustaw jako aktywną
                     activeNote = noteObj;
-
-                    // 2. Dodaj do historii (na początek listy)
                     history.unshift(noteObj);
-                    
-                    // Limit 100 ostatnich wiadomości
                     if (history.length > 100) history.pop();
-
-                    // 3. ZAPISZ DO PLIKU
                     saveHistory();
 
                     bot.telegram.sendMessage(chatId, "✅ Zapisano!")
-                       .catch(() => {});
+                        .catch((err) => console.error("❌ Błąd wysyłania potwierdzenia:", err));
                 }
             }
         }
-    } catch (e) { }
+    } catch (e: any) { 
+        // Obsługa błędów Axios/Sieci
+        const errorMsg = e.message || e;
+        
+        // Ignoruj timeouty (to normalne przy long-polling), ale loguj inne
+        if (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET') {
+             // cicho sza, to normalne przy przerwaniu połączenia
+        } else if (e.response && e.response.status === 401) {
+             console.error("🔥 BŁĄD 401: Zły TOKEN Telegrama! Sprawdź plik .env");
+        } else {
+             console.error("🔥 Błąd połączenia z Telegramem (Loop):", errorMsg);
+        }
+    }
     
+    // Krótkie opóźnienie przed kolejnym zapytaniem
     setTimeout(runLoop, 100);
 }
 
+console.log("🚀 Bot wystartował. Próbuję nawiązać połączenie...");
 runLoop();
 
 export default router;
