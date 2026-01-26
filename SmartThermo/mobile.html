@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wyślij Notatkę</title>
+    <style>
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        
+        .card {
+            background: #333;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        input,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: none;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: none;
+        }
+        
+        button {
+            background: #00d2ff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h2>📝 Zostaw wiadomość</h2>
+        <input type="text" id="author" placeholder="Kto pisze? (np. Kamil)">
+        <textarea id="msg" placeholder="Treść wiadomości..."></textarea>
+        <button onclick="sendNote()">Wyślij na Ekran 🚀</button>
+        <p id="status" style="margin-top: 10px; color: #888;"></p>
+    </div>
+
+    <script>
+        async function sendNote() {
+            const author = document.getElementById('author').value;
+            const text = document.getElementById('msg').value;
+            const status = document.getElementById('status');
+
+            if (!text) return;
+
+            status.innerText = "Wysyłanie...";
+
+            try {
+                await fetch('/api/notes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        author,
+                        text
+                    })
+                });
+                status.innerText = "Wysłano! ✅";
+                document.getElementById('msg').value = "";
+            } catch (e) {
+                status.innerText = "Błąd wysyłania ❌";
+            }
+        }
+    </script>
+</body>
+
+</html>

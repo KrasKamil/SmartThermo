@@ -20,6 +20,7 @@
         "querystring": "^0.2.1",
         "rss-parser": "^3.13.0",
         "swagger-ui-express": "^5.0.1",
+        "telegraf": "^4.16.3",
         "yamljs": "^0.3.0"
     },
     "devDependencies": {

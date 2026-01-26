@@ -11,6 +11,7 @@ import mediaRoutes from './routes/media';
 import debugRoutes from './routes/debug';
 import airRoutes from './routes/air';
 import dailyRoutes from './routes/daily';
+import notesRoutes from './routes/notes';
 
 class App {
   public server: express.Application;
@@ -52,6 +53,7 @@ class App {
   this.server.use('/api/debug', debugRoutes); 
   this.server.use('/api/air', airRoutes);
   this.server.use('/api/daily', dailyRoutes);
+  this.server.use('/api/notes', notesRoutes);
 }
 }
 

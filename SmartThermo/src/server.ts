@@ -8,7 +8,7 @@ dotenv.config();
 const PORT = process.env.PORT || 8888;
 
 app.listen(PORT, () => {
-    console.clear(); // Czyści konsolę przy restarcie (opcjonalne)
+    //console.clear(); // Czyści konsolę przy restarcie (opcjonalne)
     console.log("===================================================");
     console.log(`🚀 SERWER URUCHOMIONY NA PORTCIE: ${PORT}`);
     console.log("===================================================");

@@ -1,34 +1,40 @@
 // js/main.js
 import { initClock } from './modules/clock.js';
 import { fetchWeather, clearWeatherData, initChartToggle } from './modules/weather.js';
-import { handleSpotifyToken } from './modules/spotify.js';
-import { loadStations, toggleRadioPlay, playRadio } from './modules/radio.js';
+import { loadStations } from './modules/radio.js';
 import { checkSystemMedia, controlSystemMedia, miniControl } from './modules/systemPlayer.js';
 import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
 import { initVoiceAssistant } from './modules/voice.js';
-import { state } from './modules/state.js';
 import {
     toggleTheme,
     openPopup,
     closePopup,
     handleVolumeInput
 } from './modules/ui.js';
-import { initAirQuality, loadAirQuality } from './modules/air.js'
+import { initAirQuality, loadAirQuality } from './modules/air.js';
 import { initDaily, startDailyInterval } from './modules/daily.js';
 
+// Importujemy initNotes. Funkcja openHistoryPopup jest globalna, więc jej tu nie wymieniamy.
+import { initNotes } from './modules/notes.js';
+
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Uruchamiamy podstawowe moduły
     initClock();
     fetchWeather();
     initChartToggle();
     loadStations();
     initVoiceAssistant();
 
-    // Sprawdzanie mediów co 3 sekundy
+    // 2. Media i System
     setInterval(checkSystemMedia, 3000);
     checkSystemMedia();
+
+    // 3. Powietrze i Pogoda
     initAirQuality();
     startDailyInterval();
 
+    // 4. Inicjalizacja notatek i historii (TO JEST KLUCZOWE DLA PRZYCISKU)
+    initNotes();
 
     // Obsługa rozwijania/zwijania tabeli pogody
     const weatherContainer = document.getElementById('weather-container');
@@ -49,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Eksporty do window (aby HTML je widział)
+// Eksporty do window (aby HTML je widział w onclick="")
 window.ClearData = clearWeatherData;
 window.toggleTheme = toggleTheme;
 window.fetchWeather = fetchWeather;
@@ -63,5 +69,5 @@ window.handleVolumeInput = handleVolumeInput;
 window.scanBluetooth = scanBluetooth;
 window.connectBluetooth = connectBluetooth;
 window.miniControl = miniControl;
-window.controlSystemMedia = controlSystemMedia; // Dla kompatybilności
+window.controlSystemMedia = controlSystemMedia;
 window.loadAirQuality = loadAirQuality;

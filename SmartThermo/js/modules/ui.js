@@ -2,9 +2,10 @@ let volumeDebounceTimer; // Zmienna poza funkcją, pamięta licznik czasu
 
 export function toggleTheme() {
     document.body.classList.toggle("light-mode");
-    // Automatyczne przeładowanie wykresu temperatury, jeśli istnieje funkcja fetchWeather
-    if (window.fetchWeather) {
-        window.fetchWeather();
+
+    // NAPRAWA: Po zmianie klasy, wymuś przerysowanie wykresu z nowymi kolorami
+    if (window.updateChart) {
+        window.updateChart();
     }
 }
 
