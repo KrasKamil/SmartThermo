@@ -8,7 +8,7 @@ dotenv.config();
 const PORT = process.env.PORT || 8888;
 
 // Sprawdzamy, czy uruchomiono przez "npm run dev"
-const isDevMode = process.env.npm_lifecycle_event === 'dev';
+const isDevMode = __filename.endsWith('.ts') || process.env.npm_lifecycle_event === 'dev';
 
 app.listen(PORT, () => {
     // console.clear(); // Opcjonalne

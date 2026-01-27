@@ -4,19 +4,23 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import * as loudness from 'loudness';
-import { isWindows, getWindowsMedia, getLineInStatus } from '../helpers/system';
+import { 
+    isWindows, 
+    getLineInStatus, 
+    RADIO_STATIONS, 
+    serverRadioState, 
+    setServerRadio 
+} from '../helpers/system';
 
 const router = Router();
-
-// 👇 ZMIANA 1: Definiujemy folder ze skryptami
 const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
 
-// 👇 ZMIANA 2: Aktualizujemy ścieżki do plików wewnątrz folderu scripts
+
 const NIRCMD_PATH = path.join(SCRIPTS_DIR, 'nircmd.exe');
 const PYTHON_SCRIPT_PATH = path.join(SCRIPTS_DIR, 'get_media.py');
 const CONTROL_MEDIA_SCRIPT = path.join(SCRIPTS_DIR, 'control_media.py');
 
-// 👇 WAŻNE: Środowisko wirtualne (env-media) zostało w głównym folderze, więc tu bez zmian
+
 const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
 
 
@@ -87,18 +91,20 @@ const getMediaFromPython = (): Promise<any> => {
     });
 };
 
-// 1. Lista stacji radiowych
+
+// --- ENDPOINTY ---
+
+// Teraz endpoint API bierze dane z tej samej listy co Telegram!
 router.get('/radio/list', (req, res) => {
-    const stations = [
-        { id: "rmf", title: "RMF FM", subtitle: "Muzyka", streamUrl: "http://217.74.72.12:8000/rmf_fm" },
-        { id: "rmfclassic", title: "RMF Classic", subtitle: "Filmowa", streamUrl: "http://217.74.72.12:8000/rmf_classic" },
-        { id: "zet", title: "Radio ZET", subtitle: "Rozrywka", streamUrl: "http://zet-net-01.cdn.eurozet.pl:8400/listen.pls" },
-        { id: "eskarock", title: "Eska Rock", subtitle: "Rock/Alt", streamUrl: "http://ic2.smcdn.pl:8000/2380-1.mp3" },
-        { id: "vox", title: "VOX FM", subtitle: "Disco", streamUrl: "http://ic2.smcdn.pl:8000/3990-1.mp3" },
-        { id: "tok", title: "TOK FM", subtitle: "News", streamUrl: "http://ic2.smcdn.pl:8000/2400-1.mp3" },
-        { id: "antyradio", title: "Antyradio", subtitle: "Rock", streamUrl: "http://ant-kat.cdn.eurozet.pl:8604/listen.pls" }
-    ];
-    res.json(stations);
+    // Frontend potrzebuje streamUrl jako directUrl do odtwarzania w <audio>
+    // Mapujemy dane, żeby pasowały do starego formatu frontendu
+    const frontendList = RADIO_STATIONS.map(s => ({
+        id: s.id,
+        title: s.title,
+        subtitle: s.subtitle,
+        streamUrl: s.directUrl // Frontend woli bezpośrednie linki mp3/aac
+    }));
+    res.json(frontendList);
 });
 
 // 2. Config
@@ -127,61 +133,51 @@ router.post('/media/control', async (req: Request, res: Response) => {
         const { action, value } = req.body;
         console.log(`🎛️ Action: ${action}`);
 
+        if (action === 'pause' || action === 'stop') {
+            setServerRadio(false, "", "");
+        }
+
         if (isWindows) {
             switch (action) {
-                // --- KATEGORIA 1: Odtwarzanie (Python WinSDK) ---
                 case 'playpause':
                 case 'play':
                 case 'pause':
                 case 'next':
                 case 'prev':
-                case 'stop':
-                    runPythonControl(action);
-                    break;
-
-                // --- KATEGORIA 2: Głośność (NirCmd / Loudness) ---
-                case 'set_volume':
+                case 'stop': runPythonControl(action); break;
+                case 'set_volume': 
                     if (value !== undefined) {
                         const vol = Math.floor((parseInt(value) / 100) * 65535);
                         runNirCmd(`setsysvolume ${vol}`);
                     }
                     break;
-                
-                case 'volume_up':
-                    runNirCmd('changesysvolume 2000');
-                    break;
-                case 'volume_down':
-                    runNirCmd('changesysvolume -2000');
-                    break;
+                case 'volume_up': runNirCmd('changesysvolume 2000'); break;
+                case 'volume_down': runNirCmd('changesysvolume -2000'); break;
             }
-        } else {
-            // Linux (bez zmian)
-            const runLinux = (cmd: string) => exec(cmd, () => {});
-            if (action === 'playpause') runLinux('xdotool key XF86AudioPlay');
-            if (action === 'next') runLinux('xdotool key XF86AudioNext');
-            if (action === 'prev') runLinux('xdotool key XF86AudioPrev');
-            if (action === 'set_volume' && value) runLinux(`amixer set Master ${value}%`);
-        }
-
+        } 
         res.json({ status: 'success' });
-
-    } catch (error) {
-        console.error("Server Error:", error);
-        res.status(500).json({ error: 'Error' });
-    }
+    } catch { res.status(500).json({ error: 'Error' }); }
 });
 
 // 4. Now Playing
 router.get('/media/now-playing', async (req: Request, res: Response) => {
+    // 1. Radio wymuszone (Telegram)
+    if (serverRadioState.isPlaying) {
+        return res.json({
+            title: serverRadioState.name,
+            artist: serverRadioState.description,
+            status: "Playing",
+            source: "Radio (Telegram)", 
+            cover: "style-css/img/radio.svg"
+        });
+    }
+
+    // 2. Windows / BT
     if (isWindows) {
         try {
-            // 1. Pobierz statusy z obu źródeł
             const pyData = await getMediaFromPython();
             const lineDevice = await getLineInStatus(); 
 
-            // 2. LOGIKA PRIORYTETÓW
-            
-            // A. Jeśli Windows GRA -> Windows ma priorytet
             if (pyData && pyData.found && pyData.status === 'Playing') {
                 return res.json({
                     title: pyData.title,
@@ -191,8 +187,6 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
                     cover: pyData.cover || ""          
                 });
             }
-
-            // B. Jeśli Windows NIE GRA, ale mamy BLUETOOTH
             if (lineDevice) {
                 return res.json({
                     title: "Audio Bluetooth",
@@ -202,8 +196,6 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
                     type: "bluetooth"
                 });
             }
-
-            // C. Windows zapauzowany
             if (pyData && pyData.found) {
                  return res.json({
                     title: pyData.title,
@@ -213,12 +205,8 @@ router.get('/media/now-playing', async (req: Request, res: Response) => {
                     cover: pyData.cover || ""          
                 });
             }
-
-            // D. Nic nie gra
             res.json({ title: "", artist: "", status: "Paused", source: "None" });
-
-        } catch (error) {
-            console.error(error);
+        } catch {
             res.json({ title: "", artist: "", status: "Error", source: "None" });
         }
     } else {
