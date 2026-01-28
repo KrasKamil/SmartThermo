@@ -22,10 +22,23 @@ export async function loadStations() {
 
             btn.onclick = () => {
                 state.currentStationIndex = index;
+
+                // 1. Graj natychmiast lokalnie
                 playRadio(station.streamUrl, station.title);
                 highlightActiveStation(index);
-                // Zamknij popup po wyborze (opcjonalne, odkomentuj jeśli chcesz)
-                // window.closeRadioPopup(); 
+
+                // 2. WYŚLIJ INFO DO SERWERA (żeby zapamiętał nową stację)
+                fetch('/api/media/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'play_radio',
+                        value: {
+                            title: station.title,
+                            url: station.streamUrl
+                        }
+                    })
+                }).catch(err => console.error("Błąd synchro radia:", err));
             };
             grid.appendChild(btn);
         });
@@ -74,22 +87,45 @@ export function playRadio(url, name) {
 
 export function toggleRadioPlay() {
     const player = document.getElementById('radio-audio');
+    if (!player) return;
 
     if (player.paused) {
-        // WZNAWIANIE
+        // PLAY
+        console.log("Wznawianie radia (lokalnie + serwer)");
         player.play();
         state.isRadioPlaying = true;
         state.isPlaying = true;
-        state.activeSource = 'radio';
         updateUIState(true);
+
+        // Wyślij, co teraz gramy, żeby serwer wiedział
+        const currentStation = state.globalStationList[state.currentStationIndex];
+        if (currentStation) {
+            fetch('/api/media/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'play_radio',
+                    value: {
+                        title: currentStation.title,
+                        url: currentStation.streamUrl
+                    }
+                })
+            });
+        }
     } else {
-        // PAUZOWANIE
+        // PAUSE
+        console.log("Pauzowanie radia -> Wysyłam STOP do serwera");
         player.pause();
-        // WAŻNE: Nie zmieniamy activeSource na 'none', 
-        // dzięki temu checkSystemMedia w systemPlayer.js nie nadpisze widoku!
         state.isRadioPlaying = false;
         state.isPlaying = false;
         updateUIState(false);
+
+        // Wyślij PAUSE do serwera - to musi zabić stan na backendzie!
+        fetch('/api/media/control', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'pause' })
+        });
     }
 }
 

@@ -1,6 +1,6 @@
+// public/js/modules/systemPlayer.js
 import { toggleRadioPlay, playRadio } from './radio.js';
-
-// Funkcja miniControl - sterowanie radiem i systemem
+import { state } from './state.js';
 export function miniControl(action) {
     // 1. Jeśli gra RADIO INTERNETOWE
     if (state.activeSource === 'radio') {
@@ -11,27 +11,38 @@ export function miniControl(action) {
                 let direction = (action === 'next') ? 1 : -1;
                 state.currentStationIndex += direction;
 
-                // Pętla listy
+                // Pętla listy (karuzela)
                 if (state.currentStationIndex >= state.globalStationList.length) state.currentStationIndex = 0;
                 if (state.currentStationIndex < 0) state.currentStationIndex = state.globalStationList.length - 1;
 
                 const nextStation = state.globalStationList[state.currentStationIndex];
 
-                // Przełącz stację
+                // A. Przełącz stację LOKALNIE (dla szybkości)
                 playRadio(nextStation.streamUrl, nextStation.title);
+
+                // B. 👇 KLUCZOWE: Wyślij info do SERWERA!
+                // Bez tego serwer po 1 sekundzie przywracał starą stację.
+                fetch('/api/media/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'play_radio',
+                        value: {
+                            title: nextStation.title,
+                            url: nextStation.streamUrl
+                        }
+                    })
+                }).catch(e => console.error("Błąd Next/Prev:", e));
             }
         }
     }
     // 2. W przeciwnym razie steruj SYSTEMEM (Spotify/BT)
     else {
-        // Mapowanie akcji 'play' na 'playpause' dla systemu Windows
         let sysAction = action;
         if (action === 'play') sysAction = 'playpause';
-
         controlSystemMedia(sysAction);
     }
 }
-import { state } from './state.js';
 
 export async function checkSystemMedia() {
     try {

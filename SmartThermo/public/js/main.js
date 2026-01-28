@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initVoiceAssistant();
 
     // 2. Media i System
-    setInterval(checkSystemMedia, 3000);
+    setInterval(checkSystemMedia, 2000);
     checkSystemMedia();
 
     // 3. Powietrze i Pogoda
@@ -73,3 +73,65 @@ window.connectBluetooth = connectBluetooth;
 window.miniControl = miniControl;
 window.controlSystemMedia = controlSystemMedia;
 window.loadAirQuality = loadAirQuality;
+
+function getRadioPlayer() {
+    let player = document.getElementById('radio-audio');
+    if (!player) {
+        player = document.createElement('audio');
+        player.id = 'radio-audio';
+        player.style.display = 'none';
+        document.body.appendChild(player);
+    }
+    return player;
+}
+
+const audioPlayer = getRadioPlayer();
+let lastServerUrl = "";
+
+async function checkServerMusic() {
+    try {
+        const res = await fetch('/api/media/now-playing');
+        const data = await res.json();
+
+        // 1. Radio GRA
+        if (data.source === 'Radio' && data.status === 'Playing' && data.streamUrl) {
+            if (lastServerUrl !== data.streamUrl) {
+                console.log("📻 (Main) Zmiana stacji:", data.title);
+                audioPlayer.src = data.streamUrl;
+                lastServerUrl = data.streamUrl;
+                audioPlayer.play().catch(e => console.warn("Autoplay block:", e));
+            } else {
+                if (audioPlayer.paused && audioPlayer.src) {
+                    audioPlayer.play().catch(e => {});
+                }
+            }
+        }
+        // 2. Radio ZAPAUZOWANE (Nowość)
+        else if (data.source === 'Radio' && data.status === 'Paused') {
+            // Jeśli mamy załadowany ten URL, po prostu pauzujemy (nie czyścimy bufora!)
+            if (!audioPlayer.paused) {
+                console.log("⏸️ Pauza radia (z serwera)");
+                audioPlayer.pause();
+            }
+            // Upewniamy się, że src jest ustawione (np. po odświeżeniu strony)
+            if (!audioPlayer.src && data.streamUrl) {
+                audioPlayer.src = data.streamUrl;
+                lastServerUrl = data.streamUrl;
+            }
+        }
+        // 3. INNE (STOP lub inne źródło)
+        else {
+            // Czyścimy tylko jeśli myśleliśmy, że gra radio
+            if (lastServerUrl !== "") {
+                console.log("⏹️ Stop radia (inne źródło lub Stop)");
+                audioPlayer.pause();
+                audioPlayer.src = "";
+                audioPlayer.load();
+                lastServerUrl = "";
+            }
+        }
+
+    } catch (e) { console.error(e); }
+}
+
+setInterval(checkServerMusic, 1000);

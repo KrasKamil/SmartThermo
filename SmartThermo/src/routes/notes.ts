@@ -9,7 +9,7 @@ import axios from 'axios';
 import { exec } from 'child_process';
 import * as loudness from 'loudness';
 import os from 'os';
-import { setServerRadio, playRadioById, RADIO_STATIONS } from '../helpers/system';
+import { setServerRadio, playRadioById, RADIO_STATIONS, serverRadioState } from '../helpers/system';
 
 dotenv.config();
 
@@ -114,70 +114,58 @@ router.post('/clear', (req, res) => {
 // --- OBSŁUGA KOMEND (NOWOŚĆ) ---
 async function handleCommand(commandLine: string, chatId: number) {
     const [cmd, ...args] = commandLine.split(' ');
-    const arg = args.join(' '); // np. dla "/set 22.5" -> "22.5"
+    const arg = args.join(' ').trim();
+
+    // Sprawdź czy Radio jest w "trybie aktywnym" (gra lub pauza)
+    const isRadioMode = serverRadioState.isPlaying || serverRadioState.url !== "";
 
     switch (cmd.toLowerCase()) {
-        // === 1. TERMOSTAT ===
-        case '/status':
-            const icon = thermoState.heating ? '🔥' : '❄️';
-            const msg = `🌡️ *Termostat*\nObecna: ${thermoState.temp}°C\nCel: ${thermoState.target}°C\nWilgoć: ${thermoState.humidity}%\nTryb: ${thermoState.mode}\nStan: ${icon}`;
-            await bot.telegram.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-            break;
-
-        case '/set':
-            const newTemp = parseFloat(arg);
-            if (!isNaN(newTemp)) {
-                thermoState.target = newTemp;
-                await bot.telegram.sendMessage(chatId, `✅ Ustawiono cel: ${newTemp}°C`);
+        case '/play': 
+            if (isRadioMode) {
+                // Wznów Radio
+                setServerRadio(true, serverRadioState.name, serverRadioState.description, serverRadioState.url);
+                await bot.telegram.sendMessage(chatId, "▶️ Wznowiono Radio");
             } else {
-                await bot.telegram.sendMessage(chatId, "❌ Użycie: /set 22.5");
+                // Wznów Spotify
+                runMediaControl('play'); 
+                await bot.telegram.sendMessage(chatId, "▶️ Play (System)"); 
             }
             break;
 
-        case '/mode':
-            if (['heat', 'eco', 'off'].includes(arg.toLowerCase())) {
-                thermoState.mode = arg.toLowerCase();
-                await bot.telegram.sendMessage(chatId, `⚙️ Tryb: ${arg.toUpperCase()}`);
+        case '/pause': 
+            if (isRadioMode) {
+                // Pauza Radia (Spotify śpi)
+                setServerRadio(false, serverRadioState.name, serverRadioState.description, serverRadioState.url);
+                await bot.telegram.sendMessage(chatId, "⏸️ Pauza Radia");
             } else {
-                await bot.telegram.sendMessage(chatId, "Dostępne: heat, eco, off");
+                // Pauza Spotify
+                runMediaControl('pause'); 
+                await bot.telegram.sendMessage(chatId, "⏸️ Pauza (System)"); 
             }
             break;
-
-        case '/boost':
-            thermoState.heating = true;
-            await bot.telegram.sendMessage(chatId, "🚀 BOOST włączony na 30 min!");
-            setTimeout(() => { thermoState.heating = false; }, 30 * 60 * 1000);
+        
+        case '/stop':
+            // STOP GLOBALNY - Twoje życzenie: stopuje wszystko
+            setServerRadio(false, "", "", ""); // Zabij Radio
+            runMediaControl('stop');           // Zabij Spotify
+            await bot.telegram.sendMessage(chatId, "⏹️ Zatrzymano wszystko.");
             break;
 
-        // === 2. MEDIA ===
-
-       case '/radio':
+        case '/radio':
             if (!arg) {
                 const available = RADIO_STATIONS.map(s => s.id).join(', ');
                 await bot.telegram.sendMessage(chatId, `ℹ️ Podaj stację: ${available}`);
                 return;
             }
+            // Zanim włączysz radio, wycisz system
+            runMediaControl('pause'); 
+            
             const success = playRadioById(arg);
             if (success) {
                 await bot.telegram.sendMessage(chatId, `📻 Odpalam: ${arg.toUpperCase()}`);
             } else {
                 await bot.telegram.sendMessage(chatId, `❌ Nieznana stacja.`);
             }
-            break;
-
-        case '/stop':
-            // Resetujemy status radia
-            setServerRadio(false, "", "");
-            // Można tu dodać próbę zabicia przeglądarki, ale to ryzykowne (taskkill chrome)
-            // Lepiej po prostu dać pauzę systemową:
-            exec(`"${process.cwd()}/env-media/Scripts/python.exe" "${process.cwd()}/scripts/control_media.py" pause`);
-            
-            await bot.telegram.sendMessage(chatId, "⏹️ Zatrzymano.");
-            break;
-        case '/play':
-        case '/pause':
-            runMediaControl('playpause'); // lub 'play' / 'pause' w zależności od skryptu
-            await bot.telegram.sendMessage(chatId, "⏯️ Play/Pause");
             break;
         
         case '/next':

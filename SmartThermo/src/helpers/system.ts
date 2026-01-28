@@ -4,48 +4,74 @@ import os from 'os';
 
 export const isWindows = os.platform() === 'win32';
 
-// ==========================================
-// 1. DANE RADIA I STAN (Przeniesione z media.ts)
-// ==========================================
+// 1. Lista stacji z linkami BEZPOŚREDNIMI (MP3/AAC)
 export const RADIO_STATIONS = [
-    { id: "rmf", title: "RMF FM", subtitle: "Muzyka", streamUrl: "https://www.rmf.fm/radio/play/rmf_fm", directUrl: "http://217.74.72.12:8000/rmf_fm" },
-    { id: "rmfclassic", title: "RMF Classic", subtitle: "Filmowa", streamUrl: "https://www.rmf.fm/radio/play/rmf_classic", directUrl: "http://217.74.72.12:8000/rmf_classic" },
-    { id: "zet", title: "Radio ZET", subtitle: "Rozrywka", streamUrl: "https://player.radiozet.pl/", directUrl: "http://zet-net-01.cdn.eurozet.pl:8400/listen.pls" },
-    { id: "eskarock", title: "Eska Rock", subtitle: "Rock/Alt", streamUrl: "https://www.eskago.pl/radio/eska-rock", directUrl: "http://ic2.smcdn.pl:8000/2380-1.mp3" },
-    { id: "vox", title: "VOX FM", subtitle: "Disco", streamUrl: "https://www.eskago.pl/radio/vox-fm", directUrl: "http://ic2.smcdn.pl:8000/3990-1.mp3" },
-    { id: "tok", title: "TOK FM", subtitle: "News", streamUrl: "https://audycje.tokfm.pl/", directUrl: "http://ic2.smcdn.pl:8000/2400-1.mp3" },
-    { id: "antyradio", title: "Antyradio", subtitle: "Rock", streamUrl: "https://player.antyradio.pl/", directUrl: "http://ant-kat.cdn.eurozet.pl:8604/listen.pls" }
+    { 
+        id: "rmf", 
+        title: "RMF FM", 
+        subtitle: "Najlepsza muzyka", 
+        streamUrl: "http://217.74.72.12:8000/rmf_fm" // IP
+    },
+    { 
+        id: "rmfclassic", 
+        title: "RMF Classic", 
+        subtitle: "Muzyka filmowa", 
+        streamUrl: "http://217.74.72.12:8000/rmf_classic" // IP
+    },
+    { 
+        id: "zet", 
+        title: "Radio ZET", 
+        subtitle: "Siła muzyki", 
+        // ZET rzadko udostępnia czyste IP, ale to jest ich bezpośredni serwer CDN
+        streamUrl: "http://zet-net-01.cdn.eurozet.pl:8400/listen.pls" 
+    },
+    { 
+        id: "eskarock", 
+        title: "Eska Rock", 
+        subtitle: "Gramy co chcemy", 
+        streamUrl: "http://ic2.smcdn.pl:8000/2380-1.mp3" // Port 8000
+    },
+    { 
+        id: "vox", 
+        title: "VOX FM", 
+        subtitle: "W rytmie hitów", 
+        streamUrl: "http://ic2.smcdn.pl:8000/3990-1.mp3" // Port 8000
+    },
+    { 
+        id: "antyradio", 
+        title: "Antyradio", 
+        subtitle: "Rockowa siła", 
+        streamUrl: "http://ant-kat.cdn.eurozet.pl:8604/listen.pls" // Bezpośredni
+    }
 ];
 
+// 2. Stan serwera - tutaj przechowujemy co ma grać
 export let serverRadioState = {
     isPlaying: false,
     name: "",
-    description: ""
+    description: "",
+    url: "" // To jest kluczowe dla frontendu!
 };
 
-export const setServerRadio = (playing: boolean, name: string, desc: string) => {
+export const setServerRadio = (playing: boolean, name: string, desc: string, url: string = "") => {
     serverRadioState.isPlaying = playing;
     serverRadioState.name = name;
     serverRadioState.description = desc;
+    serverRadioState.url = url;
 };
 
+// 3. Funkcja ustawiająca (bez otwierania okien!)
 export const playRadioById = (stationId: string): boolean => {
     const station = RADIO_STATIONS.find(s => s.id === stationId.toLowerCase());
     
     if (station) {
-        // Uruchamiamy przeglądarkę
-        exec(`start "" "${station.streamUrl}"`, { shell: 'powershell.exe' });
-        
-        // Ustawiamy stan globalny
-        setServerRadio(true, station.title, "Radio Internetowe");
+        console.log(`📻 Ustawiam radio: ${station.title}`);
+        // Tylko aktualizujemy stan w pamięci. Frontend to sobie pobierze.
+        setServerRadio(true, station.title, "Radio Internetowe", station.streamUrl);
         return true;
     }
     return false;
 };
-
-// ==========================================
-// 2. FUNKCJE SYSTEMOWE (Twoje istniejące)
-// ==========================================
 
 export const runCommand = (command: string): Promise<string> => {
     return new Promise((resolve) => {

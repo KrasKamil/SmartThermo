@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 8888;
 const isDevMode = __filename.endsWith('.ts') || process.env.npm_lifecycle_event === 'dev';
 
 app.listen(PORT, () => {
-    // console.clear(); // Opcjonalne
+    console.clear(); // Opcjonalne
     console.log("===================================================");
     console.log(`🚀 SERWER URUCHOMIONY NA PORTCIE: ${PORT}`);
     console.log("===================================================");

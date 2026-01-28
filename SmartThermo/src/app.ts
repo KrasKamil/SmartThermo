@@ -29,7 +29,7 @@ class App {
     // --- LOGGER (Twój istniejący) ---
     this.server.use((req, res, next) => {
       // Wyłącz logowanie dla GET /api/media/now-playing (żeby nie spamowało konsoli)
-      if (req.method === 'GET' && req.originalUrl.startsWith('/api/media/now-playing')) {
+      if (req.method === 'GET' &&( req.originalUrl.startsWith('/api/media/now-playing') || req.originalUrl.startsWith('/api/notes'))) {
         return next();
       }
       const start = Date.now();
