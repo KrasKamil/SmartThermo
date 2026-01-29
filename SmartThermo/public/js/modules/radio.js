@@ -65,24 +65,33 @@ export function playRadio(url, name) {
     const player = document.getElementById('radio-audio');
     if (!player) return;
 
+    // --- 1. OPTYMISTYCZNA AKTUALIZACJA UI (NATYCHMIAST) ---
+    // Nie czekamy na buforowanie dźwięku, zmieniamy napisy od razu!
+
+    state.isRadioPlaying = true;
+    state.isPlaying = true;
+    state.activeSource = 'radio';
+
+    const radioTrack = {
+        title: name,
+        artist: "Radio Internetowe",
+        cover: "style-css/img/radio.svg",
+        source: "Radio",
+        type: "radio"
+    };
+
+    // Aktualizujemy główny player
+    showPlayer(radioTrack);
+    updateUIState(true);
+
+    // Aktualizujemy podświetlenie kafelka (jeśli znamy index)
+    if (state.currentStationIndex >= 0) {
+        highlightActiveStation(state.currentStationIndex);
+    }
+
+    // --- 2. ODTWARZANIE DŹWIĘKU ---
     player.src = url;
-    player.play().then(() => {
-        state.isRadioPlaying = true;
-        state.isPlaying = true; // Dla globalnego stanu
-        state.activeSource = 'radio'; // Ustawiamy źródło na Radio
-
-        // Ustawiamy okładkę i tytuł w głównym playerze
-        const radioTrack = {
-            title: name,
-            artist: "Radio Internetowe",
-            cover: "style-css/img/radio.svg",
-            source: "Radio",
-            type: "radio"
-        };
-        showPlayer(radioTrack);
-        updateUIState(true);
-
-    }).catch(console.error);
+    player.play().catch(e => console.error("Błąd odtwarzania radia (może być przerwane):", e));
 }
 
 export function toggleRadioPlay() {
@@ -91,15 +100,23 @@ export function toggleRadioPlay() {
 
     if (player.paused) {
         // PLAY
-        console.log("Wznawianie radia (lokalnie + serwer)");
+        console.log("Wznawianie radia");
         player.play();
         state.isRadioPlaying = true;
         state.isPlaying = true;
         updateUIState(true);
 
-        // Wyślij, co teraz gramy, żeby serwer wiedział
         const currentStation = state.globalStationList[state.currentStationIndex];
         if (currentStation) {
+            // Odśwież UI na wypadek gdyby było stare
+            showPlayer({
+                title: currentStation.title,
+                artist: "Radio Internetowe",
+                cover: "style-css/img/radio.svg",
+                source: "Radio",
+                type: "radio"
+            });
+
             fetch('/api/media/control', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -114,13 +131,12 @@ export function toggleRadioPlay() {
         }
     } else {
         // PAUSE
-        console.log("Pauzowanie radia -> Wysyłam STOP do serwera");
+        console.log("Pauzowanie radia");
         player.pause();
         state.isRadioPlaying = false;
         state.isPlaying = false;
         updateUIState(false);
 
-        // Wyślij PAUSE do serwera - to musi zabić stan na backendzie!
         fetch('/api/media/control', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -129,19 +145,15 @@ export function toggleRadioPlay() {
     }
 }
 
-// Funkcja aktualizująca wygląd przycisku w Mini Playerze
 function updateUIState(isPlaying) {
     const playBtn = document.querySelector('#play-pause-btn');
-    // POPRAWKA: Nowe ID equalizera
     const equalizer = document.getElementById('equalizer-anim');
 
     if (isPlaying) {
         if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        // POPRAWKA: Usuwamy klasę hidden-anim, żeby pokazać słupki
         if (equalizer) equalizer.classList.remove('hidden-anim');
     } else {
         if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        // POPRAWKA: Dodajemy klasę hidden-anim, żeby ukryć słupki
         if (equalizer) equalizer.classList.add('hidden-anim');
     }
 }

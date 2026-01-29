@@ -220,13 +220,29 @@
                             <td id="Temp_ins">-</td>
                         </tr>
                         <tr id="inline-chart-row" style="display: none;">
-                            <td colspan="2" style="padding: 0; background: rgba(0,0,0,0.02);">
-                                <div class="inline-chart-wrapper" style="position: relative;">
-                                    <h4 id="temp-music-trigger" style="text-align: center; cursor: pointer; color: #ff007f; margin: 10px 0; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                                        Temperatura
-                                    </h4>
+                            <td colspan="2" style="padding: 0; background: rgba(0,0,0,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div class="inline-chart-wrapper" style="
+                                display: flex; 
+                                flex-direction: column; 
+                                height: 200px; 
+                                width: 100%; 
+                                padding: 10px; 
+                                box-sizing: border-box;">
 
-                                    <canvas id="tempChart"></canvas>
+                                    <div style="flex: 0 0 auto; text-align: center; margin-bottom: 5px;">
+                                        <h4 id="temp-music-trigger" style="
+                                        margin: 0; 
+                                        cursor: pointer; 
+                                        color: #ff007f; 
+                                        font-size: 1.1em;
+                                        transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                                            Temperatura 🔥
+                                        </h4>
+                                    </div>
+
+                                    <div style="flex: 1; position: relative; width: 100%; min-height: 0; overflow: hidden;">
+                                        <canvas id="tempChart"></canvas>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -255,8 +271,8 @@
                                     </div>
 
                                     <button id="updateBtn" onclick="ClearData();" title="Odśwież dane" class="refresh-icon-btn">
-                <i class="fa fa-rotate-right"></i>
-            </button>
+                                    <i class="fa fa-rotate-right"></i>
+                                </button>
                                 </div>
                             </td>
                         </tr>

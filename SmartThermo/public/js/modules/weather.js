@@ -1,3 +1,5 @@
+import { state } from './state.js';
+
 let tempChart = null;
 let skolimAudio = null;
 let clickTimer = null;
@@ -31,7 +33,6 @@ export async function fetchWeather() {
 export function clearWeatherData() {
     ["City", "Temp_ins", "Hum_ins", "Pressure", "Temp_out", "Wind"].forEach(id => setText(id, ""));
     fetchWeather().then(() => {
-        // Jeśli wiersz z wykresem jest otwarty, odświeżamy go
         const row = document.getElementById('inline-chart-row');
         if (row && row.style.display !== 'none') {
             updateChart();
@@ -45,6 +46,7 @@ function setText(id, text) {
     el.innerText = text;
 }
 
+// --- GŁÓWNA FUNKCJA KONTROLI WYKRESU I MUZYKI ---
 export function initChartToggle() {
     const btn = document.getElementById('toggle-inline-chart');
     const row = document.getElementById('inline-chart-row');
@@ -53,92 +55,97 @@ export function initChartToggle() {
 
     let wasRadioPlaying = false;
 
-    // --- LOGIKA MP3 (Single vs Double Click) ---
     if (musicTrigger) {
-
-        // Funkcja pomocnicza do odtwarzania
         const playSkolim = (fileSrc, isFull) => {
-            // 1. Jeśli coś już gra (Skolim), zatrzymaj to, zresetuj I WZÓW RADIO
+            // 1. STOP (Jeśli już gra)
             if (skolimAudio) {
-                skolimAudio.pause();
+                try {
+                    skolimAudio.pause();
+                } catch (e) { /* ignoruj błędy przy pauzowaniu */ }
+
                 skolimAudio.currentTime = 0;
                 skolimAudio = null;
-                musicTrigger.style.color = "#ff007f"; // Reset koloru
-                musicTrigger.innerText = "Temperatura ";
 
-                // Wznawiamy radio przy ręcznym stopie, jeśli grało wcześniej
+                musicTrigger.style.color = "#ff007f";
+                musicTrigger.innerText = "Temperatura 🔥";
+
+                // Zdejmij blokadę systemową
+                state.isLocalSoundPlaying = false;
+
+                // Wznów radio jeśli grało
                 if (wasRadioPlaying && radioPlayer) {
-                    radioPlayer.play().catch(e => console.error("Błąd wznawiania radia:", e));
-                    wasRadioPlaying = false; // Resetujemy flagę
+                    radioPlayer.play().catch(e => console.error("Błąd radia:", e));
+                    wasRadioPlaying = false;
                 }
                 return;
             }
 
-            // 2. Zatrzymaj radio internetowe (jeśli gra) i ZAPAMIĘTAJ to
+            // 2. PLAY
+            state.isLocalSoundPlaying = true; // Blokada System Playera
+
             if (radioPlayer && !radioPlayer.paused) {
-                wasRadioPlaying = true; // Zapamiętujemy, że grało
+                wasRadioPlaying = true;
                 radioPlayer.pause();
             } else {
-                wasRadioPlaying = false; // Dla pewności resetujemy
+                wasRadioPlaying = false;
             }
 
-            // 3. Utwórz nowy player i graj
             skolimAudio = new Audio(fileSrc);
             skolimAudio.volume = 1.0;
 
-            skolimAudio.play().catch(e => console.error("Błąd audio:", e));
+            const playPromise = skolimAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    if (e.name !== 'AbortError') {
+                        console.error("Błąd odtwarzania Skolima:", e);
+                    }
+                });
+            }
 
-            // Zmiana wyglądu
             musicTrigger.style.color = "#00d2ff";
-            musicTrigger.innerText = isFull ? "Temperatura 🔥" : "Temperatura 🔥";
+            musicTrigger.innerText = isFull ? "Temperatura 🔥 (Cały...)" : "Temperatura 🔥 (Gra...)";
 
-            // Reset po zakończeniu i WZNOWIENIE RADIA
             skolimAudio.onended = () => {
                 skolimAudio = null;
                 musicTrigger.style.color = "#ff007f";
-                musicTrigger.innerText = "Temperatura ";
+                musicTrigger.innerText = "Temperatura 🔥";
 
-                // Wznawiamy radio po zakończeniu utworu
+                state.isLocalSoundPlaying = false;
+
                 if (wasRadioPlaying && radioPlayer) {
-                    radioPlayer.play().catch(e => console.error("Błąd wznawiania radia:", e));
+                    radioPlayer.play().catch(e => {});
                     wasRadioPlaying = false;
                 }
             };
         };
 
-        // --- OBSŁUGA POJEDYNCZEGO KLIKNIĘCIA ---
         musicTrigger.onclick = () => {
             if (clickTimer) clearTimeout(clickTimer);
             clickTimer = setTimeout(() => {
-                playSkolim('media/temperatura.mp3', false); // GRA KRÓTKI
+                playSkolim('media/temperatura.mp3', false);
             }, 250);
         };
 
-        // --- OBSŁUGA PODWÓJNEGO KLIKNIĘCIA ---
         musicTrigger.ondblclick = () => {
             if (clickTimer) clearTimeout(clickTimer);
-            playSkolim('media/temperatura_full.mp3', true); // GRA PEŁNY
+            playSkolim('media/temperatura_full.mp3', true);
         };
     }
 
-    // --- LOGIKA WYKRESU (BTN) ---
-    // To musi być poza if(musicTrigger), ale wewnątrz initChartToggle
     if (btn && row) {
         btn.onclick = () => {
             const isHidden = row.style.display === 'none';
             row.style.display = isHidden ? 'table-row' : 'none';
-            btn.classList.toggle('active', isHidden); // 'active' gdy pokazujemy (isHidden=true przed zmianą)
-
-            if (isHidden) {
-                updateChart();
-            }
+            btn.classList.toggle('active', isHidden);
+            if (isHidden) updateChart();
         };
     }
 }
 
-// --- Funkcja rysująca wykres ---
+// --- ZMODYFIKOWANA FUNKCJA RYSUJĄCA WYKRES ---
 async function updateChart() {
     const row = document.getElementById('inline-chart-row');
+    // Sprawdzamy czy wiersz jest widoczny - jeśli nie, nie rysujemy (oszczędność zasobów)
     if (!row || row.style.display === 'none') return;
 
     try {
@@ -146,15 +153,31 @@ async function updateChart() {
         const historyData = await res.json();
         if (!historyData || historyData.length === 0) return;
 
-        const ctx = document.getElementById('tempChart').getContext('2d');
-
+        const canvas = document.getElementById('tempChart');
+        const ctx = canvas.getContext('2d');
         const isLight = document.body.classList.contains('light-mode');
-        const axisColor = isLight ? '#222' : 'rgba(255, 255, 255, 0.6)';
-        const gridColor = isLight ? '#bbb' : 'rgba(255, 255, 255, 0.05)';
 
-        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-        gradient.addColorStop(0, 'rgba(46, 148, 227, 0.4)');
-        gradient.addColorStop(1, 'rgba(46, 148, 227, 0.0)');
+        // --- STYLE DLA RAMKI I TŁA ---
+        if (isLight) {
+            canvas.style.backgroundColor = "rgba(255, 255, 255, 0.5)"; // Jaśniejsze tło w light mode
+            canvas.style.border = "1px solid #ddd";
+            canvas.style.boxShadow = "inset 0 0 20px rgba(0,0,0,0.05)";
+        } else {
+            canvas.style.backgroundColor = "rgba(0, 0, 0, 0.2)";
+            canvas.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+            canvas.style.boxShadow = "none";
+        }
+        canvas.style.borderRadius = "12px";
+
+        // Kolory
+        const axisColor = isLight ? '#555' : 'rgba(255, 255, 255, 0.6)';
+        const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+        const lineColor = '#00d2ff';
+        const pointColor = isLight ? '#007acc' : '#2E94E3';
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300); // Gradient dopasowany do wysokości
+        gradient.addColorStop(0, isLight ? 'rgba(0, 210, 255, 0.4)' : 'rgba(46, 148, 227, 0.4)');
+        gradient.addColorStop(1, isLight ? 'rgba(0, 210, 255, 0.0)' : 'rgba(46, 148, 227, 0.0)');
 
         if (tempChart) tempChart.destroy();
 
@@ -165,10 +188,12 @@ async function updateChart() {
                 datasets: [{
                     label: 'Temperatura',
                     data: historyData.map(d => d.temp),
-                    borderColor: '#00d2ff',
+                    borderColor: lineColor,
                     borderWidth: 3,
-                    pointBackgroundColor: '#2E94E3',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: pointColor,
+                    pointBorderColor: isLight ? '#fff' : '#222',
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
                     tension: 0.4,
                     fill: true,
                     backgroundColor: gradient
@@ -176,18 +201,49 @@ async function updateChart() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                maintainAspectRatio: false, // Ważne: wypełnia kontener z HTML
+                resizeDelay: 200, // Zapobiega migotaniu przy skalowaniu okna
+
+                layout: {
+                    padding: {
+                        // Tytuł jest teraz w HTML nad wykresem, więc top może być mały
+                        top: 10,
+                        right: 15,
+                        bottom: 10,
+                        left: 5
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: isLight ? 'rgba(255,255,255,0.95)' : 'rgba(20,20,20,0.9)',
+                        titleColor: isLight ? '#000' : '#fff',
+                        bodyColor: isLight ? '#333' : '#ddd',
+                        borderColor: isLight ? '#ccc' : '#444',
+                        borderWidth: 1,
+                        displayColors: false,
+                        padding: 10
+                    }
+                },
                 scales: {
                     y: {
-                        title: { display: true, text: 'Temp [°C]', color: axisColor, font: { size: 10, weight: 'bold' } },
+                        beginAtZero: false,
+                        title: { display: false }, // Ukryłem tytuł osi Y dla czystszego wyglądu (opcjonalne)
                         grid: { color: gridColor },
-                        ticks: { color: axisColor, font: { size: 9 } }
+                        ticks: { color: axisColor, font: { size: 10 }, padding: 5 }
                     },
                     x: {
-                        title: { display: true, text: 'Godzina', color: axisColor, font: { size: 10, weight: 'bold' } },
+                        title: { display: false },
                         grid: { display: false },
-                        ticks: { color: axisColor, font: { size: 9 } }
+                        ticks: {
+                            color: axisColor,
+                            font: { size: 10 },
+                            maxRotation: 0, // Zapobiega obracaniu tekstu godziny
+                            autoSkip: true, // Pomija godziny jeśli jest ciasno
+                            maxTicksLimit: 6
+                        }
                     }
                 }
             }

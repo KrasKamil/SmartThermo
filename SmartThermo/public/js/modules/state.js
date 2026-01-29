@@ -5,6 +5,8 @@ export const state = {
 
     // Czy cokolwiek gra (Globalny status)
     isPlaying: false,
+    isLocalSoundPlaying: false,
+
 
     // Informacje o utworze (wspólne dla wszystkich źródeł)
     currentTrack: {

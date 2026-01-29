@@ -1,6 +1,8 @@
 // public/js/modules/systemPlayer.js
 import { toggleRadioPlay, playRadio } from './radio.js';
 import { state } from './state.js';
+
+
 export function miniControl(action) {
     // 1. Jeśli gra RADIO INTERNETOWE
     if (state.activeSource === 'radio') {
@@ -45,77 +47,70 @@ export function miniControl(action) {
 }
 
 export async function checkSystemMedia() {
+    if (state.isLocalSoundPlaying) {
+        return;
+    }
+
     try {
         const res = await fetch('/api/media/now-playing');
         if (!res.ok) return;
 
         const data = await res.json();
-
-        // Pobieramy nazwę źródła z Windowsa (np. "Spotify.exe", "chrome.exe", "msedge.exe")
         const rawSource = (data.source || 'System').toLowerCase();
 
-        // Sprawdzamy, czy Windows widzi naszą przeglądarkę
-        // (To jest ta "pętla", której chcemy uniknąć)
         const isBrowserSelfDetection = rawSource.includes('chrome') ||
             rawSource.includes('edge') ||
             rawSource.includes('opera') ||
-            rawSource.includes('firefox');
+            rawSource.includes('firefox') ||
+            rawSource === 'web' ||
+            rawSource === 'system';
 
         // --- GŁÓWNA LOGIKA OCHRONY RADIA ---
         if (state.activeSource === 'radio') {
 
-            // SCENARIUSZ A: Windows widzi przeglądarkę (czyli nas samych)
-            // Ignorujemy to całkowicie. Nie pozwalamy nadpisać 'radio' przez 'browser'.
-            if (isBrowserSelfDetection) {
-                // Jeśli Windows widzi, że gramy, upewnij się, że stan globalny to potwierdza
-                if (data.status === 'Playing') {
-                    // Opcjonalnie: synchronizacja stanu, ale bez zmiany źródła
-                }
-                return; // WYCHODZIMY - Nie pozwalamy zmienić widoku!
+            // POPRAWKA: Usunięta spacja w "?.title"
+            const currentStation = state.globalStationList[state.currentStationIndex];
+            const currentStationTitle = currentStation ? currentStation.title : "";
+
+            // Sprawdzamy, czy to co gra w systemie to nasza stacja
+            const isPlayingOurRadio = data.title && currentStationTitle && data.title.includes(currentStationTitle);
+
+            // A. JEŚLI TO PRZEGLĄDARKA LUB NASZE RADIO -> IGNORUJ
+            if (isBrowserSelfDetection || isPlayingOurRadio) {
+                return; // Zostawiamy UI Radia w spokoju
             }
 
-            // SCENARIUSZ B: Windows widzi INNĄ aplikację (np. Spotify)
-            // Jeśli Spotify zaczęło grać, to faktycznie chcemy przełączyć widok.
-            if (data.status === 'Playing' && !isBrowserSelfDetection) {
-                // Wyłączamy radio, bo weszło Spotify
+            // B. JEŚLI TO SPOTIFY LUB BLUETOOTH -> PRZEŁĄCZ
+            const isSpotify = rawSource.includes('spotify');
+            const isBluetooth = rawSource.includes('bluetooth') || data.title === "Audio Bluetooth";
+
+            if ((isSpotify || isBluetooth) && data.status === 'Playing') {
+                console.log("Przełączanie źródła z Radia na:", rawSource);
+
                 const radioAudio = document.getElementById('radio-audio');
                 if (radioAudio && !radioAudio.paused) {
                     radioAudio.pause();
                 }
                 state.isRadioPlaying = false;
-                // I pozwalamy kodowi iść dalej w dół, żeby przełączyć na Spotify
-            }
-
-            // SCENARIUSZ C: Windows nic nie widzi (Pauza)
-            // Skoro jesteśmy w trybie radia, to znaczy, że po prostu zapauzowaliśmy radio.
-            // NIE RESETUJEMY WIDOKU.
-            else {
-                return; // WYCHODZIMY - Zostawiamy kafel radia na ekranie
+            } else {
+                return;
             }
         }
         // ------------------------------------
 
-
-        // Dalsza logika (tylko jeśli NIE jesteśmy w trybie radia lub Spotify przejęło kontrolę)
+        // Dalsza logika (Spotify / System) - wykona się tylko jeśli NIE ma radia
         if (data.status === 'Playing' || (data.title && data.title.length > 0)) {
-
             state.isPlaying = (data.status === 'Playing');
 
-            // Ukrywanie equalizera przy pauzie
             const equalizer = document.getElementById('equalizer-anim');
             if (equalizer) {
-                if (state.isPlaying) {
-                    equalizer.classList.remove('hidden-anim');
-                } else {
-                    equalizer.classList.add('hidden-anim');
-                }
+                state.isPlaying ? equalizer.classList.remove('hidden-anim') : equalizer.classList.add('hidden-anim');
             }
 
-            // Wykrywanie typu źródła
             let sourceType = 'system';
             if (rawSource.includes('spotify')) sourceType = 'spotify';
             else if (rawSource.includes('bluetooth')) sourceType = 'bluetooth';
-            else if (isBrowserSelfDetection) sourceType = 'browser'; // To zadziała tylko, jeśli nie byliśmy w trybie radia
+            else sourceType = 'system';
 
             state.activeSource = sourceType;
 
@@ -123,13 +118,12 @@ export async function checkSystemMedia() {
                 title: data.title,
                 artist: data.artist,
                 cover: data.cover || '',
-                source: data.source, // Oryginalna nazwa
+                source: data.source,
                 type: sourceType
             };
 
             showPlayer(state.currentTrack);
         } else {
-            // Ukryj player TYLKO jeśli NIE jesteśmy w trybie radia
             if (state.activeSource !== 'radio') {
                 hidePlayer();
                 state.isPlaying = false;

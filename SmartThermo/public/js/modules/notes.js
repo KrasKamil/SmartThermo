@@ -12,8 +12,8 @@ audioNormal.volume = 0.5;
 audioAlert.volume = 1.0;
 
 export function initNotes() {
-    // Sprawdzaj nowe notatki co 5 sekund
-    setInterval(checkNotes, 5000);
+    // Sprawdzaj nowe notatki co 4 sekundy
+    setInterval(checkNotes, 4000);
     checkNotes();
 }
 
