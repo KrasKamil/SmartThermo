@@ -4,31 +4,46 @@ let tempChart = null;
 let skolimAudio = null;
 let clickTimer = null;
 
-export async function fetchWeather() {
-    try {
-        const response = await fetch('/api/weather');
-        if (!response.ok) throw new Error(`Status: ${response.status}`);
-        const data = await response.json();
+export function updateWeatherUI(data) {
+    if (!data) return;
 
-        setText("City", data.city || "Brak danych");
-        setText("Temp_ins", data.temp_ins || "-");
-        setText("Hum_ins", data.hum_ins || "-");
-        setText("Pressure", data.pressure || "-");
-        setText("Temp_out", data.temp_out || "-");
-        setText("Wind", data.wind || "-");
-        setText("last-update-text", data.due_date || "-");
+    // Mapowanie pól z JSONa na ID w HTMLu
+    // Upewnij się, że masz takie ID w pliku HTML (np. id="temp-ins")
+    const mappings = {
+        'City': data.city,
+        'Temp_ins': data.temp_ins,
+        'Hum_ins': data.hum_ins,
+        'Pressure': data.pressure,
+        'Temp_out': data.temp_out,
+        'Wind': data.wind,
+        'last-update-text': data.due_date
+    };
 
-        document.getElementById("weather-container").classList.remove("hidden");
-        document.getElementById("weather-table").classList.remove("hidden");
-        document.getElementById("error-message").classList.add("hidden");
-
-    } catch (error) {
-        console.error("Weather error:", error);
-        document.getElementById("weather-table").classList.add("hidden");
-        document.getElementById("error-message").classList.remove("hidden");
-        document.getElementById("error-text").innerText = "Offline";
+    for (const [id, value] of Object.entries(mappings)) {
+        const el = document.getElementById(id);
+        if (el) {
+            // Dodajemy małą animację mignięcia przy aktualizacji
+            el.innerText = value;
+            el.style.transition = "color 0.5s";
+            el.style.color = "#4caf50"; // Zielony na chwilę
+            setTimeout(() => {
+                el.style.color = ""; // Wróć do koloru CSS
+            }, 1000);
+        }
     }
 }
+
+export async function fetchWeather() {
+    try {
+        // To wykonujemy tylko raz przy starcie strony
+        const res = await fetch('/api/weather');
+        const data = await res.json();
+        updateWeatherUI(data);
+    } catch (e) {
+        console.error("Błąd pobierania pogody:", e);
+    }
+}
+
 
 export function clearWeatherData() {
     ["City", "Temp_ins", "Hum_ins", "Pressure", "Temp_out", "Wind"].forEach(id => setText(id, ""));

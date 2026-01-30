@@ -24,31 +24,35 @@ class App {
 
   middlewares() {
     this.server.use(cors());
-    this.server.use(express.json());
+    this.server.use(express.json({ limit: '10mb' }));
+    this.server.use(express.urlencoded({ limit: '10mb', extended: true }));
     
-    // --- LOGGER (Twój istniejący) ---
+    // Logger
     this.server.use((req, res, next) => {
-      // Wyłącz logowanie dla GET /api/media/now-playing (żeby nie spamowało konsoli)
-      if (req.method === 'GET' &&( req.originalUrl.startsWith('/api/media/now-playing') || req.originalUrl.startsWith('/api/notes'))) {
+      // Wyłącz logowanie dla spamujących endpointów
+      if (req.method === 'GET' && (req.originalUrl.startsWith('/api/media/now-playing') || req.originalUrl.startsWith('/api/notes'))) {
         return next();
       }
+      // Wyłącz też logowanie payloadu obrazków, bo zaśmiecą konsolę, ale loguj błędy
       const start = Date.now();
       res.on('finish', () => {
         const duration = Date.now() - start;
         const statusIcon = res.statusCode >= 400 ? '❌' : '✅';
+        // Ignorujemy logowanie sukcesu POST /update-system, bo Python wysyła to co sekundę
+        if (req.originalUrl.includes('/update-system') && res.statusCode === 200) return;
+        
         console.log(`📝 ${statusIcon} [${req.method}] ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
       });
       next();
     });
 
-    // --- ZMIANA: Obsługa folderu PUBLIC ---
-    // Wskazujemy folder 'public' jako miejsce, gdzie leżą pliki HTML, CSS, JS, Sounds, Media
     const publicPath = path.join(__dirname, '../public');
     this.server.use(express.static(publicPath));
   }
 
   routes() {
     // API Routes
+    
     this.server.use('/api/weather', weatherRoutes);
     this.server.use('/api/bluetooth', bluetoothRoutes);
     this.server.use('/api', mediaRoutes);

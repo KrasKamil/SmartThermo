@@ -24,8 +24,10 @@ export function updateClock() {
 
     if (!state.use24HourFormat) {
         if (hou == 0) hou = 12;
-        if (hou > 12) { hou -= 12;
-            pe = "PM"; }
+        if (hou > 12) {
+            hou -= 12;
+            pe = "PM";
+        }
     }
 
     const pad = (num) => num.toString().padStart(2, '0');
