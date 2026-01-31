@@ -7,6 +7,10 @@ export function toggleTheme() {
     if (window.updateChart) {
         window.updateChart();
     }
+    const slider = document.getElementById('volume-slider');
+    if (slider) {
+        updateVolumeVisuals(slider.value);
+    }
 }
 
 export function controlVolume(action) {
@@ -44,31 +48,44 @@ export function closePopup(id) {
 export function updateVolumeVisuals(val) {
     const slider = document.getElementById('volume-slider');
     const label = document.getElementById('vol-percent');
-    const iconStatus = document.getElementById('vol-icon-status'); // Pobieramy lewą ikonkę
+    const iconStatus = document.getElementById('vol-icon-status');
 
-    // Aktualizacja tekstu procentowego
+    // 1. Aktualizacja tekstu procentowego
     if (label) label.innerText = `${val}%`;
 
-    // LOGIKA IKONY: Jeśli 0 -> 🔇, w przeciwnym razie -> 🔈
+    // 2. Sprawdzamy czy mamy Jasny Motyw
+    const isLight = document.body.classList.contains('light-mode');
+
+    // 3. LOGIKA IKONY
     if (iconStatus) {
         if (val == 0) {
             iconStatus.innerText = "🔇";
-            iconStatus.style.color = "#ff4444"; // Opcjonalnie: na czerwono gdy wyciszone
+            iconStatus.style.color = "#ff4444";
         } else {
             iconStatus.innerText = "🔈";
-            iconStatus.style.color = ""; // Reset koloru
+            // W jasnym trybie ikona fioletowa, w ciemnym domyślna
+            iconStatus.style.color = isLight ? '#a64ac9' : '';
         }
     }
 
-    // Aktualizacja gradientu (Twoja oryginalna logika)
+    // 4. AKTUALIZACJA GRADIENTU (Kluczowa zmiana)
     if (slider) {
         const percentage = (val - slider.min) / (slider.max - slider.min) * 100;
-        slider.style.background = `linear-gradient(to right, #00d2ff 0%, #00d2ff ${percentage}%, rgba(255,255,255,0.1) ${percentage}%, rgba(255,255,255,0.1) 100%)`;
+
+        // Ustawiamy kolory zależnie od trybu
+        // Light: Różowy pasek + Szare tło
+        // Dark:  Niebieski pasek + Przezroczyste tło
+        const colorFill = isLight ? '#d63384' : '#00d2ff';
+        const colorTrack = isLight ? '#e9ecef' : 'rgba(255,255,255,0.1)';
+
+        slider.style.background = `linear-gradient(to right, ${colorFill} 0%, ${colorFill} ${percentage}%, ${colorTrack} ${percentage}%, ${colorTrack} 100%)`;
         slider.style.backgroundSize = "100% 8px";
         slider.style.backgroundRepeat = "no-repeat";
         slider.style.backgroundPosition = "center";
     }
 }
+
+
 // funkcja pomocnicza do pobierania głośności z serwera
 async function syncSystemVolume() {
     try {

@@ -10,6 +10,7 @@ import { exec } from 'child_process';
 import * as loudness from 'loudness';
 import os from 'os';
 import { setServerRadio, playRadioById, RADIO_STATIONS, serverRadioState } from '../helpers/system';
+import { getIO } from '../helpers/socket';
 
 dotenv.config();
 
@@ -28,16 +29,16 @@ const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
 const VENV_PYTHON_PATH = path.join(process.cwd(), 'env-media', 'Scripts', 'python.exe');
 const CONTROL_MEDIA_SCRIPT = path.join(SCRIPTS_DIR, 'control_media.py');
 const PYTHON_SCRIPT_PATH = path.join(SCRIPTS_DIR, 'get_media.py');
+const NIRCMD_PATH = path.join(SCRIPTS_DIR, 'nircmd.exe');
 
 // API Root
 const TELEGRAM_API_ROOT = process.env.TELEGRAM_API_ROOT || 'https://api.telegram.org';
 
 if (TELEGRAM_TOKEN === 'Brak tokena') {
     console.error('❌ Błąd: Brak tokena Telegrama w zmiennych środowiskowych.');
-    // Nie zabijamy procesu exit(1), żeby reszta serwera wstała, ale bot nie zadziała
 }
 
-// Inicjalizacja Telegraf (do wysyłania wiadomości)
+// Inicjalizacja Telegraf
 const bot = new Telegraf(TELEGRAM_TOKEN, {
     telegram: { apiRoot: TELEGRAM_API_ROOT }
 });
@@ -47,16 +48,6 @@ const ALLOWED_USERS: number[] = [
     8290453013,
     8504057899 
 ];
-
-// --- STAN TERMOSTATU (MOCK) ---
-// Docelowo podepnij tu import zmiennych globalnych, jeśli masz je w innym pliku
-let thermoState = {
-    temp: 21.5,
-    humidity: 45,
-    target: 22.0,
-    mode: 'eco', // heat, eco, off
-    heating: false
-};
 
 // --- FUNKCJE POMOCNICZE MULTIMEDIA ---
 const runMediaControl = (action: string) => {
@@ -80,7 +71,7 @@ const getNowPlaying = (): Promise<string> => {
     });
 };
 
-// --- LOGIKA NOTATEK (Twoja stara) ---
+// --- LOGIKA NOTATEK ---
 interface Note {
     text: string; author: string; timestamp: number; visible: boolean;
 }
@@ -103,7 +94,7 @@ function saveHistory() {
 }
 loadHistory();
 
-// --- API EXPRESS (dla frontendu) ---
+// --- API EXPRESS ---
 router.get('/', (req, res) => res.json(activeNote));
 router.get('/history', (req, res) => res.json(history));
 router.post('/clear', (req, res) => {
@@ -111,22 +102,71 @@ router.post('/clear', (req, res) => {
     res.json({ success: true });
 });
 
-// --- OBSŁUGA KOMEND (NOWOŚĆ) ---
+// --- OBSŁUGA KOMEND ---
 async function handleCommand(commandLine: string, chatId: number) {
     const [cmd, ...args] = commandLine.split(' ');
     const arg = args.join(' ').trim();
 
-    // Sprawdź czy Radio jest w "trybie aktywnym" (gra lub pauza)
+    // Sprawdź czy Radio jest w "trybie aktywnym"
     const isRadioMode = serverRadioState.isPlaying || serverRadioState.url !== "";
 
     switch (cmd.toLowerCase()) {
+        case '/playspoti':
+            // 1. Jeśli gra radio, wyłącz je
+            if (isRadioMode) {
+                 setServerRadio(false, "", "", "");
+                 getIO().emit('media_update', { source: "System", status: "Stopped" });
+            }
+
+            // 2. Uruchom Spotify (Windows command)
+            // Używamy "start" aby nie blokować procesu i pozwolić systemowi obsłużyć URI
+            // To otworzy Spotify "w tle" (systemowym), ale okno może wyskoczyć na wierzch
+            exec('start spotify:', (err) => {
+                if (err) console.error("Błąd startu Spotify:", err);
+            });
+
+            await bot.telegram.sendMessage(chatId, "🚀 Uruchamiam Spotify...");
+
+            // 3. Odczekaj 5 sekund na załadowanie aplikacji
+            setTimeout(async () => {
+                // 4. Wyślij sygnał Play do systemu (złapie sesję Spotify)
+                runMediaControl('play');
+                
+                // Aktualizuj UI w przeglądarce
+                getIO().emit('media_update', {
+                    source: "System",
+                    status: "Playing",
+                    title: "Spotify Connect",
+                    artist: "Odtwarzanie...",
+                    cover: "style-css/img/spotify.png"
+                });
+
+                if (fs.existsSync(NIRCMD_PATH)) {
+                    // 'stitle' szuka fragmentu tekstu w tytule okna
+                    // Szukamy okna z tytułem "Your Thermo Assistant" (jak w vapage.html)
+                    exec(`"${NIRCMD_PATH}" win activate stitle "Your Thermo Assistant"`, (err) => {
+                        if (err) console.log("⚠️ Nie udało się przywrócić okna:", err.message);
+                        else console.log("✅ Przywrócono okno Thermo Assistant.");
+                    });
+                }
+
+                await bot.telegram.sendMessage(chatId, "▶️ Wysłano komendę Play.");
+            }, 5000);
+            break;
+
         case '/play': 
             if (isRadioMode) {
-                // Wznów Radio
                 setServerRadio(true, serverRadioState.name, serverRadioState.description, serverRadioState.url);
+                getIO().emit('media_update', {
+                    source: "Radio",
+                    status: "Playing",
+                    title: serverRadioState.name,
+                    artist: "Radio Internetowe",
+                    cover: "style-css/img/radio.svg",
+                    streamUrl: serverRadioState.url
+                });
                 await bot.telegram.sendMessage(chatId, "▶️ Wznowiono Radio");
             } else {
-                // Wznów Spotify
                 runMediaControl('play'); 
                 await bot.telegram.sendMessage(chatId, "▶️ Play (System)"); 
             }
@@ -134,20 +174,32 @@ async function handleCommand(commandLine: string, chatId: number) {
 
         case '/pause': 
             if (isRadioMode) {
-                // Pauza Radia (Spotify śpi)
                 setServerRadio(false, serverRadioState.name, serverRadioState.description, serverRadioState.url);
+                getIO().emit('media_update', {
+                    source: "Radio",
+                    status: "Paused",
+                    title: serverRadioState.name,
+                    artist: "Radio Internetowe",
+                    cover: "style-css/img/radio.svg",
+                    streamUrl: serverRadioState.url
+                });
                 await bot.telegram.sendMessage(chatId, "⏸️ Pauza Radia");
             } else {
-                // Pauza Spotify
                 runMediaControl('pause'); 
                 await bot.telegram.sendMessage(chatId, "⏸️ Pauza (System)"); 
             }
             break;
         
         case '/stop':
-            // STOP GLOBALNY - Twoje życzenie: stopuje wszystko
-            setServerRadio(false, "", "", ""); // Zabij Radio
-            runMediaControl('stop');           // Zabij Spotify
+            setServerRadio(false, "", "", ""); 
+            getIO().emit('media_update', {
+                source: "System",
+                status: "Stopped",
+                title: "",
+                artist: "",
+                cover: ""
+            });
+            runMediaControl('stop');           
             await bot.telegram.sendMessage(chatId, "⏹️ Zatrzymano wszystko.");
             break;
 
@@ -157,11 +209,18 @@ async function handleCommand(commandLine: string, chatId: number) {
                 await bot.telegram.sendMessage(chatId, `ℹ️ Podaj stację: ${available}`);
                 return;
             }
-            // Zanim włączysz radio, wycisz system
             runMediaControl('pause'); 
             
             const success = playRadioById(arg);
             if (success) {
+                getIO().emit('media_update', {
+                    source: "Radio",
+                    status: "Playing",
+                    title: serverRadioState.name,
+                    artist: "Radio Internetowe",
+                    cover: "style-css/img/radio.svg",
+                    streamUrl: serverRadioState.url
+                });
                 await bot.telegram.sendMessage(chatId, `📻 Odpalam: ${arg.toUpperCase()}`);
             } else {
                 await bot.telegram.sendMessage(chatId, `❌ Nieznana stacja.`);
@@ -188,7 +247,6 @@ async function handleCommand(commandLine: string, chatId: number) {
             }
             break;
 
-        // === 3. SYSTEM ===
         case '/uptime':
             const up = process.uptime();
             const h = Math.floor(up / 3600);
@@ -197,14 +255,13 @@ async function handleCommand(commandLine: string, chatId: number) {
             break;
 
         case '/logs':
-            // Tu możesz wczytać ostatnie linie z pliku .log jeśli masz
             await bot.telegram.sendMessage(chatId, "📜 Logi: (funkcja w budowie)");
             break;
         
-        // Menu pomocy
         case '/help':
         case '/start':
             const help = `🤖 *SmartThermo Bot*
+/playspoti - Uruchom Spotify
 /status - Stan pieca
 /set [temp] - Ustaw temp
 /mode [eco/heat/off] - Tryb
@@ -222,7 +279,7 @@ async function handleCommand(commandLine: string, chatId: number) {
     }
 }
 
-// --- GŁÓWNA PĘTLA (Long Polling ręczny via Axios) ---
+// --- GŁÓWNA PĘTLA ---
 let offset = 0;
 
 async function runLoop() {
@@ -242,18 +299,14 @@ async function runLoop() {
 
                     console.log(`📩 [Telegram] ${author}: ${text}`);
 
-                    // Auth check
                     if (ALLOWED_USERS.length > 0 && !ALLOWED_USERS.includes(chatId)) {
                         console.log(`⛔ Blokada: ${chatId}`);
                         continue;
                     }
 
-                    // 👉 DECYZJA: KOMENDA CZY NOTATKA?
                     if (text.startsWith('/')) {
-                        // To jest komenda
                         await handleCommand(text, chatId);
                     } else {
-                        // To jest notatka (stara logika)
                         const noteObj: Note = {
                             text: text,
                             author: author,
@@ -278,7 +331,6 @@ async function runLoop() {
     setTimeout(runLoop, 100);
 }
 
-// Start pętli tylko jeśli jest token
 if (TELEGRAM_TOKEN !== 'Brak tokena') {
     console.log("🚀 Moduł Notatek i Komend Telegrama uruchomiony.");
     runLoop();

@@ -411,3 +411,539 @@
 .hidden {
     display: none !important;
 }
+
+
+/* =========================================
+   LIGHT MODE - PINK & VIOLET THEME
+   ========================================= */
+
+
+/* --- 1. GŁÓWNE TŁO I KOLORY --- */
+
+body.light-mode {
+    /* Cieplejsze, jaśniejsze tło (lekko różowe/szare) zamiast zimnego niebieskiego */
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    color: #333;
+}
+
+
+/* --- 2. NAPRAWA ZNIKAJĄCEGO TEKSTU (Owerwrite Inline Styles) --- */
+
+
+/* To kluczowa sekcja - wymusza ciemny kolor nawet jak w HTML jest style="color: #fff" */
+
+.light-mode h1,
+.light-mode h2,
+.light-mode h3,
+.light-mode h4,
+.light-mode p,
+.light-mode span,
+.light-mode div,
+.light-mode label {
+    /* Jeśli element nie ma klasy 'icon' ani nie jest w playerze, wymuś ciemny kolor */
+    color: #333;
+}
+
+
+/* Wyjątki, które MAJĄ być białe (np. tekst na aktywnym kafelku radia) */
+
+.light-mode .radio-tile.active .title,
+.light-mode .radio-tile.active .icon,
+.light-mode .btn.active {
+    color: #fff !important;
+}
+
+
+/* --- 3. POPUPY I OVERLAYE (Settings, Spotify) --- */
+
+.light-mode #settings-overlay,
+.light-mode #spotify-overlay,
+.light-mode #radio-overlay,
+.light-mode .popup-overlay,
+.light-mode .popup-centered {
+    background: rgba(255, 255, 255, 0.6) !important;
+    /* Mleczne tło */
+    backdrop-filter: blur(15px) !important;
+}
+
+.light-mode .popup-content,
+.light-mode .popup-bordered,
+.light-mode #settings-popup,
+.light-mode #spotify-popup {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(214, 51, 132, 0.2) !important;
+    /* Różowa ramka */
+    box-shadow: 0 20px 50px rgba(166, 74, 201, 0.15) !important;
+    /* Fioletowy cień */
+    color: #333 !important;
+    border-radius: 24px !important;
+}
+
+
+/* Nagłówki w popupach - wymuszamy kolor różowy/fioletowy */
+
+.light-mode .popup-content h2,
+.light-mode #settings-popup h2,
+.light-mode #spotify-popup h2 {
+    color: #d63384 !important;
+    /* Różowy nagłówek */
+    text-shadow: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 10px;
+}
+
+
+/* Tekst pod nagłówkami (np. "Steruj muzyką...") */
+
+.light-mode .popup-content p {
+    color: #666 !important;
+}
+
+
+/* Przycisk zamknięcia (X) */
+
+.light-mode .close-btn {
+    color: #888 !important;
+    background: transparent !important;
+    border: 1px solid #eee;
+}
+
+.light-mode .close-btn:hover {
+    color: #d63384 !important;
+    border-color: #d63384;
+}
+
+
+/* --- 4. ELEMENTY INTERFEJSU (Strzałki, Przyciski) --- */
+
+
+/* Strzałki zwijania (np. pogody) - ZMIANA Z NIEBIESKIEGO NA RÓŻ */
+
+.light-mode .collapse-btn,
+.light-mode .refresh-icon-btn {
+    color: #d63384 !important;
+    /* Różowy kolor */
+}
+
+.light-mode .collapse-btn:hover,
+.light-mode .refresh-icon-btn:hover {
+    color: #a64ac9 !important;
+    /* Fiolet po najechaniu */
+    background: rgba(214, 51, 132, 0.1) !important;
+    /* Tło po najechaniu */
+}
+
+
+/* Wrappery (np. ramki widgetów) */
+
+.light-mode .wrapper,
+.light-mode .widget-container,
+.light-mode #weather-table-wrapper {
+    border-color: rgba(214, 51, 132, 0.15) !important;
+    /* Delikatna różowa ramka */
+    background: rgba(255, 255, 255, 0.5);
+    /* Półprzezroczyste tło */
+}
+
+
+/* --- 5. SUWAKI I INPUTY (Settings) --- */
+
+.light-mode input[type=range]::-webkit-slider-runnable-track {
+    background: #e9ecef;
+}
+
+.light-mode input[type=range]::-webkit-slider-thumb {
+    background: #d63384;
+    /* Różowa kropka suwaka */
+    box-shadow: 0 0 10px rgba(214, 51, 132, 0.4);
+}
+
+.light-mode .setting-row {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode .setting-label {
+    color: #444 !important;
+    font-weight: 600;
+}
+
+
+/* --- 6. RADIO I PRZYCISKI --- */
+
+.light-mode .radio-tile {
+    background: #fff;
+    border: 1px solid #eee;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.03);
+}
+
+.light-mode .radio-tile:hover {
+    border-color: #d63384;
+    /* Różowa ramka po najechaniu */
+}
+
+.light-mode .radio-tile.active {
+    /* Gradient różowo-fioletowy dla aktywnego radia */
+    background: linear-gradient(135deg, #d63384, #a64ac9) !important;
+    border-color: transparent;
+    box-shadow: 0 8px 20px rgba(214, 51, 132, 0.4);
+}
+
+
+/* Zwykłe przyciski */
+
+.light-mode button:not(.close-btn):not(.radio-tile) {
+    background: #fff;
+    color: #555;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+}
+
+.light-mode button:hover {
+    color: #d63384;
+    border-color: #d63384;
+}
+
+
+/* --- 7. TABELE (Pogoda / Historia) --- */
+
+.light-mode th {
+    color: #a64ac9 !important;
+    /* Fioletowe nagłówki tabeli */
+    border-bottom: 2px solid rgba(166, 74, 201, 0.1);
+}
+
+.light-mode td {
+    color: #555 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .history-date {
+    color: #d63384 !important;
+    /* Różowa data w historii */
+}
+
+
+/* --- 8. FIX DLA INLINE STYLES (Ostateczna deska ratunku) --- */
+
+
+/* Jeśli jakiś element ma wpisane style="color: white", to to go nadpisze */
+
+.light-mode *[style*="color: #fff"],
+.light-mode *[style*="color: white"],
+.light-mode *[style*="color:#fff"],
+.light-mode *[style*="color:white"] {
+    color: #333 !important;
+}
+
+
+/* Przywracamy biały kolor tam, gdzie ma być biały (np. ikony na różowym tle) */
+
+.light-mode .active *[style*="color: #fff"],
+.light-mode .active i,
+.light-mode button.active {
+    color: #fff !important;
+}
+
+
+/* --- PASEK AKTUALIZACJI (Last Update) --- */
+
+
+/* 1. Tło całego paska pod tabelą - zmiana z niebieskiego na pastelowy róż */
+
+.light-mode .last-update-bar {
+    background: rgba(255, 245, 250, 0.8) !important;
+    /* Bardzo jasny róż */
+    border-top: 1px solid rgba(214, 51, 132, 0.1);
+    /* Delikatna linia */
+    color: #555;
+}
+
+
+/* 2. Tekst etykiety "Last update:" - pastelowy szary */
+
+.light-mode .update-text .label {
+    color: #999 !important;
+    font-weight: 500;
+}
+
+
+/* 3. Sama godzina (czas) - Pastelowy Fiolet */
+
+.light-mode .update-text .time,
+.light-mode #last-update-text {
+    color: #a64ac9 !important;
+    /* Fiolet pasujący do nagłówków */
+    font-weight: 700;
+    /* Lekkie pogrubienie dla czytelności */
+    text-shadow: none !important;
+}
+
+
+/* 4. Ikona odświeżania obok - też na fiolet */
+
+.light-mode .refresh-icon-btn {
+    color: #a64ac9 !important;
+}
+
+.light-mode .refresh-icon-btn:hover {
+    background: rgba(166, 74, 201, 0.1) !important;
+}
+
+
+/* --- EQUALIZER (Animacja w Playerze) --- */
+
+
+/* 1. Tło pod equalizerem (na dole okładki) */
+
+
+/* Zmieniamy z niebieskiego gradientu na delikatny mleczno-różowy */
+
+.light-mode .equalizer-overlay {
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.8) 0%, rgba(255, 240, 245, 0.4) 60%, transparent 100%) !important;
+    border-bottom-left-radius: 16px;
+    /* Dopasowanie do zaokrąglenia okładki */
+    border-bottom-right-radius: 16px;
+}
+
+
+/* 2. Słupki (Bars) - Domyślnie Różowe */
+
+.light-mode .bar {
+    background: #d63384 !important;
+    /* Głęboki róż */
+    box-shadow: 0 0 8px rgba(214, 51, 132, 0.4);
+    /* Różowa poświata */
+    width: 6px;
+    /* Lekko szersze dla lepszej widoczności */
+    border-radius: 4px;
+    /* Zaokrąglone końcówki słupków */
+}
+
+
+/* 3. Co drugi słupek - Fioletowy (efekt przeplatanki) */
+
+.light-mode .bar:nth-child(even) {
+    background: #a64ac9 !important;
+    /* Fiolet */
+    box-shadow: 0 0 8px rgba(166, 74, 201, 0.4);
+    /* Fioletowa poświata */
+}
+
+
+/* --- DAILY WIDGET (Różowy Light Mode) --- */
+
+
+/* 1. Przycisk zwijania "Day" */
+
+.light-mode #toggle-daily-widget {
+    color: #d63384 !important;
+    /* Różowy napis i strzałka */
+}
+
+.light-mode #toggle-daily-widget:hover {
+    color: #a64ac9 !important;
+    /* Fiolet po najechaniu */
+}
+
+
+/* 2. Pasek po lewej stronie (border) */
+
+.light-mode #daily-widget-content>div {
+    border-left-color: #d63384 !important;
+    /* Zmiana z niebieskiego na róż */
+}
+
+
+/* 3. Nagłówek "Dzień dobry!" */
+
+.light-mode .daily-title {
+    color: #a64ac9 !important;
+    /* Fioletowy */
+}
+
+
+/* 4. Sekcja Imieniny */
+
+.light-mode .daily-subtitle {
+    color: #999 !important;
+    /* Szary zamiast wyblakłego niebieskiego */
+}
+
+.light-mode .daily-names {
+    color: #333 !important;
+    /* Ciemny tekst imion */
+}
+
+
+/* 5. Box Historii ("Tego dnia w...") */
+
+.light-mode .history-box {
+    background: rgba(255, 240, 245, 0.6) !important;
+    /* Mleczno-różowe tło */
+    border: 1px solid rgba(214, 51, 132, 0.1);
+}
+
+
+/* Nagłówek historii (data) i ikona */
+
+.light-mode .history-box div[style*="color: #2E94E3"] {
+    color: #d63384 !important;
+    /* Różowy nagłówek daty */
+}
+
+.light-mode #history-icon {
+    color: #a64ac9 !important;
+    /* Fioletowa strzałka */
+}
+
+
+/* Tekst historii */
+
+.light-mode #history-content {
+    color: #555 !important;
+}
+
+
+/* 6. Sekcja Newsów */
+
+.light-mode .news-section {
+    border-top-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+
+/* Nagłówek "ZE ŚWIATA NEWSÓW" */
+
+.light-mode .news-section div[style*="color: #00d2ff"] {
+    color: #a64ac9 !important;
+    /* Fioletowy */
+}
+
+
+/* Pojedynczy news */
+
+.light-mode .news-item {
+    border-bottom-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode .news-item span {
+    color: #333 !important;
+    /* Tytuł newsa na ciemno */
+}
+
+
+/* Strzałki przy newsach */
+
+.light-mode .news-item .fa-chevron-right {
+    color: #d63384 !important;
+    /* Różowe strzałki */
+}
+
+
+/* Treść rozwiniętego newsa (snippet) */
+
+.light-mode div[id^="news-snippet"] {
+    color: #666 !important;
+}
+
+
+/* Link "Czytaj całość" */
+
+.light-mode div[id^="news-snippet"] a {
+    color: #d63384 !important;
+    /* Różowy link */
+}
+
+
+/* --- USTAWIENIA (Settings Popup - Light Mode Fix) --- */
+
+
+/* 1. Główny kontener popupa ustawień */
+
+.light-mode .popup-content,
+.light-mode .popup-bordered {
+    text-align: center !important;
+    /* Wyrównanie */
+}
+
+
+/* 2. Nagłówek "Ustawienia Systemu" */
+
+.light-mode h2[style*="color: #fff"] {
+    color: #333 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding-bottom: 15px;
+}
+
+
+/* 3. Nagłówki sekcji (Głośność, Bluetooth) - zmiana Cyanu na Róż */
+
+.light-mode h3[style*="color: #00d2ff"] {
+    color: #d63384 !important;
+    /* Różowy */
+}
+
+
+/* 4. Ikony głośnika i procenty */
+
+.light-mode .vol-icon,
+.light-mode #vol-percent {
+    color: #a64ac9 !important;
+    /* Fioletowy */
+    font-weight: bold;
+}
+
+
+/* 5. Przycisk "Skanuj urządzenia" (Bluetooth) */
+
+.light-mode button[onclick="scanBluetooth()"] {
+    background: linear-gradient(135deg, #a64ac9 0%, #d63384 100%) !important;
+    /* Fioletowo-różowy */
+    box-shadow: 0 4px 10px rgba(166, 74, 201, 0.3);
+    transition: transform 0.2s;
+}
+
+.light-mode button[onclick="scanBluetooth()"]:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 15px rgba(166, 74, 201, 0.5);
+}
+
+
+/* 6. Lista urządzeń Bluetooth i status */
+
+.light-mode #bt-device-list li {
+    color: #555 !important;
+    background: rgba(0, 0, 0, 0.03);
+    /* Lekkie tło dla czytelności */
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.light-mode #bt-status {
+    color: #333 !important;
+    /* Status na ciemno */
+}
+
+
+/* 7. Opisy pod nagłówkami (np. "Sparuj telefon...") */
+
+.light-mode p[style*="color: #aaa"] {
+    color: #777 !important;
+}
+
+
+/* 8. Linie oddzielające sekcje */
+
+.light-mode div[style*="border-top: 1px solid #444"] {
+    border-top-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+
+/* 9. Przycisk Historii */
+
+
+/* On już ma fioletowy gradient w HTML, więc tylko poprawiamy cień w jasnym trybie */
+
+.light-mode button[onclick="openHistoryPopup()"] {
+    box-shadow: 0 4px 15px rgba(224, 86, 253, 0.3) !important;
+}

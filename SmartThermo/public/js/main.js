@@ -1,84 +1,72 @@
-// js/main.js
+// public/js/main.js
 import { initClock } from './modules/clock.js';
 import { fetchWeather, updateWeatherUI, clearWeatherData, initChartToggle } from './modules/weather.js';
 import { loadStations } from './modules/radio.js';
-import { checkSystemMedia, controlSystemMedia, miniControl } from './modules/systemPlayer.js';
+import { miniControl, controlSystemMedia } from './modules/systemPlayer.js';
 import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
 import { initVoiceAssistant } from './modules/voice.js';
-import {
-    toggleTheme,
-    openPopup,
-    closePopup,
-    handleVolumeInput,
-    setupEventListeners
-} from './modules/ui.js';
+import { toggleTheme, openPopup, closePopup, handleVolumeInput, setupEventListeners } from './modules/ui.js';
 import { initAirQuality, loadAirQuality } from './modules/air.js';
 import { startDailyInterval } from './modules/daily.js';
-// Importujemy initNotes. Funkcja openHistoryPopup jest globalna, 
 import { initNotes } from './modules/notes.js';
+import { state } from './modules/state.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Inicjalizacja Socket.io
-    // io() jest dostępne globalnie dzięki skryptowi w HTML
     const socket = io();
 
     socket.on('connect', () => {
         console.log("🟢 Połączono z Socket.io (Real-time)");
     });
 
-    // Jak serwer krzyknie "weather_update", aktualizujemy UI
     socket.on('weather_update', (data) => {
-        console.log("⚡ Otrzymano nową pogodę przez Socket!", data);
         updateWeatherUI(data);
     });
 
-    //Reakcja na zmianę muzyki
     socket.on('media_update', (data) => {
-        console.log("🎵 Media Update (Socket):", data);
-        updatePlayerUI(data); // Wywołujemy funkcję aktualizującą UI
+        // console.log("🎵 Media Update (Socket):", data); // Opcjonalne logowanie
+        updateUnifiedPlayerUI(data);
     });
 
-    // 2. Standardowy start modułów
+    // Inicjalizacja modułów
     initClock();
-
-    // Pobierz pogodę raz na start (żeby nie czekać na pierwszy sygnał z czujnika)
     fetchWeather();
-    // UWAGA: Usunęliśmy setInterval dla pogody! Już nie musimy pytać co chwila.
-
     initChartToggle();
     loadStations();
     initVoiceAssistant();
-
-    // 3. Media i System (tu można zostawić interwał lub też przenieść na sockety w przyszłości)
-    setInterval(checkSystemMedia, 2000);
-    checkSystemMedia();
-
-    // 4. Reszta modułów
     initAirQuality();
     startDailyInterval();
     initNotes();
     setupEventListeners();
 
+    // Pobierz stan tylko jeśli radio NIE gra
+    if (!state.isRadioPlaying) {
+        fetchCurrentMedia();
+    }
+
     // Obsługa widgetów (UI)
     const weatherContainer = document.getElementById('weather-container');
     const toggleBtn = document.getElementById('toggle-weather-table');
     if (toggleBtn && weatherContainer) {
-        toggleBtn.addEventListener('click', () => {
-            weatherContainer.classList.toggle('collapsed');
-        });
+        toggleBtn.addEventListener('click', () => weatherContainer.classList.toggle('collapsed'));
     }
-
     const dailyWidget = document.getElementById('daily-widget');
     const toggleDailyBtn = document.getElementById('toggle-daily-widget');
     if (toggleDailyBtn && dailyWidget) {
-        toggleDailyBtn.addEventListener('click', () => {
-            dailyWidget.classList.toggle('collapsed');
-        });
+        toggleDailyBtn.addEventListener('click', () => dailyWidget.classList.toggle('collapsed'));
     }
 });
 
-// Eksporty globalne (dla HTML onClick)
+async function fetchCurrentMedia() {
+    try {
+        const res = await fetch('/api/media/now-playing');
+        const data = await res.json();
+        if (!state.isRadioPlaying) {
+            updateUnifiedPlayerUI(data);
+        }
+    } catch (e) { console.error("Błąd pobierania mediów:", e); }
+}
 
+// Eksporty globalne
 window.ClearData = clearWeatherData;
 window.toggleTheme = toggleTheme;
 window.fetchWeather = fetchWeather;
@@ -95,6 +83,8 @@ window.miniControl = miniControl;
 window.controlSystemMedia = controlSystemMedia;
 window.loadAirQuality = loadAirQuality;
 
+window.updatePlayerUI = updateUnifiedPlayerUI;
+
 function getRadioPlayer() {
     let player = document.getElementById('radio-audio');
     if (!player) {
@@ -106,56 +96,96 @@ function getRadioPlayer() {
     return player;
 }
 
-const audioPlayer = getRadioPlayer();
-let lastServerUrl = "";
-
-function updatePlayerUI(data) {
+// GŁÓWNA FUNKCJA AKTUALIZUJĄCA WIDGET
+function updateUnifiedPlayerUI(data) {
     const audioPlayer = getRadioPlayer();
 
-    // 1. Logika dla RADIA
-    if (data.source === 'Radio') {
-        if (data.status === 'Playing' && data.streamUrl) {
-            if (audioPlayer.src !== data.streamUrl || audioPlayer.paused) {
-                console.log("📻 Start Radia:", data.title);
-                audioPlayer.src = data.streamUrl;
-                audioPlayer.play().catch(e => console.warn("Autoplay block:", e));
-            }
-        } else {
-            audioPlayer.pause();
+    const sourceRaw = data.source || 'none';
+    const sourceLower = sourceRaw.toLowerCase();
+
+    // 🔥 TARCZA OCHRONNA 🔥
+    // Jeśli przychodzi sygnał 'System', ale my przed chwilą włączyliśmy Radio...
+    if (sourceLower !== 'radio' && state.isRadioPlaying) {
+        const timeSinceRadioStart = Date.now() - state.lastRadioStartTimestamp;
+        if (timeSinceRadioStart < 5000) {
+            console.log("🛡️ Ignorowanie fałszywego sygnału Systemu (Radio protection)");
+            return;
         }
-        // Ustaw okładkę radia
-        const art = document.getElementById('current-art');
-        if (art) art.src = data.cover || 'style-css/img/radio.svg';
     }
-    // 2. Logika dla SYSTEMU (Spotify/YouTube)
-    else if (data.source === 'System') {
-        if (!audioPlayer.paused) {
-            audioPlayer.pause();
+
+    // 1. Aktualizacja stanu
+    state.activeSource = sourceLower;
+    state.isPlaying = (data.status === 'Playing');
+
+    // 2. Elementy UI
+    const trackTitle = document.getElementById('current-track');
+    const trackArtist = document.getElementById('current-artist');
+    const trackArt = document.getElementById('current-art');
+    const playBtn = document.getElementById('play-pause-btn');
+    const equalizer = document.getElementById('equalizer-anim');
+    const widget = document.getElementById('spotify-widget');
+
+    // 3. Treści
+    if (trackTitle) trackTitle.innerText = data.title || "Brak muzyki";
+    if (trackArtist) trackArtist.innerText = data.artist || "";
+
+    if (trackArt) {
+        if (data.cover && data.cover.length > 20) {
+            trackArt.src = data.cover;
+        } else {
+            trackArt.src = (sourceLower === 'radio') ? 'style-css/img/radio.svg' : 'style-css/img/spotify.png';
         }
+    }
 
-        const trackTitle = document.getElementById('current-track');
-        const trackArtist = document.getElementById('current-artist');
-        const trackArt = document.getElementById('current-art'); // 👇 Pobieramy element obrazka
+    // 4. Przycisk Play/Pause
+    if (playBtn) {
+        playBtn.innerHTML = state.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+    }
+    if (equalizer) {
+        state.isPlaying ? equalizer.classList.remove('hidden-anim') : equalizer.classList.add('hidden-anim');
+    }
 
-        if (trackTitle) trackTitle.innerText = data.title || "Brak muzyki";
-        if (trackArtist) trackArtist.innerText = data.artist || "System";
+    // 5. OBSŁUGA AUDIO (POPRAWIONA LOGIKA)
+    if (sourceLower === 'radio') {
+        state.isRadioPlaying = state.isPlaying;
 
-        // 👇 Ustawiamy okładkę z Base64 (lub domyślną)
-        if (trackArt) {
-            if (data.cover && data.cover.startsWith('data:image')) {
-                trackArt.src = data.cover;
-            } else {
-                trackArt.src = 'style-css/img/spotify.png'; // Domyślna
+        if (state.isPlaying && data.streamUrl) {
+            // Porównujemy absolutne adresy URL, żeby uniknąć pomyłek
+            const currentSrc = audioPlayer.src;
+            const targetSrc = new URL(data.streamUrl, document.baseURI).href;
+
+            const isSrcMatch = currentSrc === targetSrc;
+
+            // Jeśli adres jest INNY, to zmieniamy źródło i gramy
+            if (!isSrcMatch) {
+                console.log("📻 Zmiana stacji (Main):", data.title);
+                audioPlayer.src = data.streamUrl;
+                audioPlayer.play().catch(e => {});
             }
+            // Jeśli adres jest TEN SAM, ale player stoi, to wznawiamy
+            else if (audioPlayer.paused) {
+                console.log("📻 Wznowienie (Main):", data.title);
+                audioPlayer.play().catch(e => {});
+            }
+            // Jeśli adres ten sam i gra -> NIE ROBIMY NIC (nie resetujemy src!)
+        } else {
+            if (!audioPlayer.paused) audioPlayer.pause();
         }
+    } else {
+        state.isRadioPlaying = false;
+        if (!audioPlayer.paused) audioPlayer.pause();
+    }
 
-        const widget = document.getElementById('spotify-widget');
-        if (widget) {
-            if (data.status === 'Playing') {
-                widget.style.display = 'block';
-                document.getElementById('login-view').style.display = 'none';
-                document.getElementById('player-view').style.display = 'block';
-            }
+    // 6. Widoczność Widgetu
+    if (widget) {
+        if (state.isPlaying || sourceLower === 'radio' || (data.title && data.title !== "")) {
+            widget.style.display = 'flex'; // Ważne: FLEX
+
+            const loginView = document.getElementById('login-view');
+            const playerView = document.getElementById('player-view');
+
+            if (loginView) loginView.style.display = 'none';
+            if (playerView) playerView.style.display = 'flex';
         }
     }
 }

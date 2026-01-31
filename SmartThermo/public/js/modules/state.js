@@ -7,7 +7,6 @@ export const state = {
     isPlaying: false,
     isLocalSoundPlaying: false,
 
-
     // Informacje o utworze (wspólne dla wszystkich źródeł)
     currentTrack: {
         title: '',
@@ -19,6 +18,9 @@ export const state = {
     isRadioPlaying: false,
     globalStationList: [],
     currentStationIndex: -1,
+
+    // Znacznik czasu startu radia (Tarcza ochronna)
+    lastRadioStartTimestamp: 0,
 
     // Ustawienia
     use24HourFormat: false,

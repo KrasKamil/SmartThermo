@@ -1,6 +1,5 @@
-// js/modules/radio.js
+// public/js/modules/radio.js
 import { state } from './state.js';
-import { showPlayer, updateMiniPlayer } from './systemPlayer.js';
 
 export async function loadStations() {
     const grid = document.getElementById('stations-grid');
@@ -17,81 +16,67 @@ export async function loadStations() {
             const btn = document.createElement('div');
             btn.className = 'radio-tile';
             btn.id = `station-tile-${index}`;
-
             btn.innerHTML = `<div class="icon">🎵</div><div class="title">${station.title}</div>`;
 
             btn.onclick = () => {
                 state.currentStationIndex = index;
-
-                // 1. Graj natychmiast lokalnie
                 playRadio(station.streamUrl, station.title);
                 highlightActiveStation(index);
 
-                // 2. WYŚLIJ INFO DO SERWERA (żeby zapamiętał nową stację)
-                fetch('/api/media/control', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'play_radio',
-                        value: {
-                            title: station.title,
-                            url: station.streamUrl
-                        }
-                    })
-                }).catch(err => console.error("Błąd synchro radia:", err));
+                if (window.closeRadioPopup) window.closeRadioPopup();
             };
             grid.appendChild(btn);
         });
     } catch (e) {
-        grid.innerHTML = '<p style="color:red">Błąd listy</p>';
+        console.error("Błąd stacji:", e);
+        grid.innerHTML = '<p style="color:red">Błąd sieci</p>';
     }
 }
 
-// Funkcja pomocnicza do zmiany klasy CSS
 function highlightActiveStation(index) {
-    // 1. Usuń .active ze wszystkich
     document.querySelectorAll('.radio-tile').forEach(el => el.classList.remove('active'));
-
-    // 2. Dodaj .active do wybranego
-    const activeTile = document.getElementById(`station-tile-${index}`);
-    if (activeTile) {
-        activeTile.classList.add('active');
-        // Opcjonalnie: Przewiń listę do wybranej stacji
-        activeTile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    const active = document.getElementById(`station-tile-${index}`);
+    if (active) active.classList.add('active');
 }
 
-export function playRadio(url, name) {
+export function playRadio(url, title) {
     const player = document.getElementById('radio-audio');
-    if (!player) return;
 
-    // --- 1. OPTYMISTYCZNA AKTUALIZACJA UI (NATYCHMIAST) ---
-    // Nie czekamy na buforowanie dźwięku, zmieniamy napisy od razu!
-
+    state.activeSource = 'radio';
     state.isRadioPlaying = true;
     state.isPlaying = true;
-    state.activeSource = 'radio';
+    state.lastRadioStartTimestamp = Date.now();
 
-    const radioTrack = {
-        title: name,
-        artist: "Radio Internetowe",
-        cover: "style-css/img/radio.svg",
-        source: "Radio",
-        type: "radio"
-    };
+    if (player) {
+        // Sprawdź czy URL jest nowy, zanim zresetujesz player
+        const targetSrc = new URL(url, document.baseURI).href;
+        if (player.src !== targetSrc) {
+            player.src = url;
+        }
 
-    // Aktualizujemy główny player
-    showPlayer(radioTrack);
-    updateUIState(true);
-
-    // Aktualizujemy podświetlenie kafelka (jeśli znamy index)
-    if (state.currentStationIndex >= 0) {
-        highlightActiveStation(state.currentStationIndex);
+        player.volume = 1.0;
+        player.play().catch(e => console.warn("Autoplay block:", e));
     }
 
-    // --- 2. ODTWARZANIE DŹWIĘKU ---
-    player.src = url;
-    player.play().catch(e => console.error("Błąd odtwarzania radia (może być przerwane):", e));
+    if (window.updatePlayerUI) {
+        window.updatePlayerUI({
+            source: 'Radio',
+            status: 'Playing',
+            title: title,
+            artist: 'Radio Internetowe',
+            streamUrl: url,
+            cover: 'style-css/img/radio.svg'
+        });
+    }
+
+    fetch('/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'play_radio',
+            value: { title: title, url: url }
+        })
+    }).catch(e => console.error("Błąd serwera:", e));
 }
 
 export function toggleRadioPlay() {
@@ -99,61 +84,37 @@ export function toggleRadioPlay() {
     if (!player) return;
 
     if (player.paused) {
-        // PLAY
-        console.log("Wznawianie radia");
-        player.play();
-        state.isRadioPlaying = true;
-        state.isPlaying = true;
-        updateUIState(true);
+        // Resume
+        state.lastRadioStartTimestamp = Date.now();
 
-        const currentStation = state.globalStationList[state.currentStationIndex];
-        if (currentStation) {
-            // Odśwież UI na wypadek gdyby było stare
-            showPlayer({
-                title: currentStation.title,
-                artist: "Radio Internetowe",
-                cover: "style-css/img/radio.svg",
-                source: "Radio",
-                type: "radio"
-            });
-
-            fetch('/api/media/control', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'play_radio',
-                    value: {
-                        title: currentStation.title,
-                        url: currentStation.streamUrl
-                    }
-                })
-            });
+        if (state.currentStationIndex >= 0 && state.globalStationList[state.currentStationIndex]) {
+            const currentStation = state.globalStationList[state.currentStationIndex];
+            playRadio(currentStation.streamUrl, currentStation.title);
         }
     } else {
-        // PAUSE
-        console.log("Pauzowanie radia");
+        // Pause
         player.pause();
-        state.isRadioPlaying = false;
         state.isPlaying = false;
-        updateUIState(false);
+
+        if (window.updatePlayerUI) {
+            // Bezpieczne pobieranie tytułu (dla starszych przeglądarek)
+            var currentTitle = "Radio";
+            var trackEl = document.getElementById('current-track');
+            if (trackEl) currentTitle = trackEl.innerText;
+
+            window.updatePlayerUI({
+                source: 'Radio',
+                status: 'Paused',
+                title: currentTitle,
+                artist: 'Radio Internetowe',
+                cover: 'style-css/img/radio.svg'
+            });
+        }
 
         fetch('/api/media/control', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'pause' })
         });
-    }
-}
-
-function updateUIState(isPlaying) {
-    const playBtn = document.querySelector('#play-pause-btn');
-    const equalizer = document.getElementById('equalizer-anim');
-
-    if (isPlaying) {
-        if (playBtn) playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        if (equalizer) equalizer.classList.remove('hidden-anim');
-    } else {
-        if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        if (equalizer) equalizer.classList.add('hidden-anim');
     }
 }
