@@ -1,5 +1,35 @@
 [
   {
+    "text": "! Kup chleb",
+    "author": "Kamil",
+    "timestamp": 1769982768056,
+    "visible": true
+  },
+  {
+    "text": "Kup chleb",
+    "author": "Kamil",
+    "timestamp": 1769982754923,
+    "visible": false
+  },
+  {
+    "text": "Gra spotify a zwraca mi że gra radio rmf",
+    "author": "Kamil",
+    "timestamp": 1769898150630,
+    "visible": true
+  },
+  {
+    "text": "Problem z focusem (otwiera się półokno",
+    "author": "Kamil",
+    "timestamp": 1769897979905,
+    "visible": false
+  },
+  {
+    "text": "Występuje walka przy odpalonym spotify i właczeniu komendy playradio",
+    "author": "Kamil",
+    "timestamp": 1769897881459,
+    "visible": false
+  },
+  {
     "text": "!alert",
     "author": "Marta",
     "timestamp": 1769873801695,

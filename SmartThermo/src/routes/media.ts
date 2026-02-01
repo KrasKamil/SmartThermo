@@ -20,7 +20,6 @@ let mediaState = {
 
 // ZMIENNE OCHRONNE
 let lastControlTime = 0; 
-// Czas (w ms), przez który ignorujemy monitor po włączeniu radia (żeby uniknąć auto-pauzy)
 const MONITOR_LOCK_TIME = 4000; 
 
 // --- GET: Listy Radiowe ---
@@ -58,27 +57,49 @@ router.post('/media/update-system', (req: Request, res: Response) => {
     const data = req.body;
     const now = Date.now();
 
-    // 🛡️ 1. BLOKADA CZASOWA (Cool-down)
-    // Jeśli włączyliśmy radio mniej niż 4 sekundy temu, ignorujemy Pythona.
+    // 🛡️ 1. BLOKADA CZASOWA (Cool-down po kliknięciu przycisku)
     if (now - lastControlTime < MONITOR_LOCK_TIME) {
-        return res.json({ success: true, ignored: true, reason: "Cooldown" });
+        return res.json({ success: true, ignored: true, reason: "Cooldown active" });
     }
 
-    // 🛡️ 2. OCHRONA PRZED PĘTLĄ RADIA (Loop Protection)
-    // Jeśli Radio gra, a Python mówi "System Playing" (bez zmiany tytułu na np. Spotify),
-    // to znaczy, że Python słyszy nasze radio w przeglądarce. Ignorujemy to.
+    // 🛡️ 2. FILTR "ECHA" (Gdy gra Radio, ignorujemy przeglądarkę)
     if (mediaState.source === 'Radio' && mediaState.status === 'Playing') {
-        if (data.status === 'Playing') {
-             // Ignorujemy, żeby nie wyłączyć radia
+        
+        const incomingTitle = (data.title || "").toLowerCase();
+        const incomingArtist = (data.artist || "").toLowerCase();
+        const currentRadioTitle = (mediaState.title || "").toLowerCase();
+
+        // Słowa, które oznaczają, że Windows widzi naszą własną aplikację
+        const blackList = [
+            "thermo", 
+            "assistant", 
+            "chrome", 
+            "edge", 
+            "firefox", 
+            "opera",
+            "browser",
+            currentRadioTitle // np. "rmf fm" - jeśli windows widzi to samo co my gramy, to też echo
+        ];
+
+        // Sprawdź czy przychodzące dane zawierają zakazane słowa
+        const isSelfEcho = blackList.some(word => 
+            incomingTitle.includes(word) || incomingArtist.includes(word)
+        );
+
+        // Jeśli gra, ale to tylko echo naszej aplikacji -> IGNORUJ
+        if (data.status === 'Playing' && isSelfEcho) {
+             console.log(`🛡️ Ignoruję echo systemowe: ${data.title} (${data.artist})`);
              return res.json({ success: true, ignored: true, reason: "Radio Loop detected" });
         }
-        // Jeśli system się zatrzymał (Stopped/Paused), też ignorujemy, bo Radio ma priorytet
-        if (data.status !== 'Playing') {
-             return res.json({ success: true, ignored: true });
+        
+        // Jeśli Windows zgłasza "Paused", a my mamy Radio Playing -> IGNORUJ
+        // (Bo często przeglądarka zgłasza pauzę innych kart, gdy jedna gra)
+        if (data.status === 'Paused') {
+            return res.json({ success: true, ignored: true, reason: "Ignore system pause while radio plays" });
         }
     }
 
-    // W przeciwnym razie (np. ktoś włączył Spotify ręcznie), aktualizujemy stan
+    // Jeśli przeszło filtry (czyli np. włączyłeś Spotify, a nie echo), aktualizujemy stan
     mediaState = {
         source: "System",
         status: data.status,
@@ -87,6 +108,12 @@ router.post('/media/update-system', (req: Request, res: Response) => {
         streamUrl: "",
         cover: data.cover || ""
     };
+    
+    // Jeśli system faktycznie gra (np. Spotify), wyłącz flagę Radia w pamięci pomocniczej
+    if (data.status === 'Playing') {
+        setServerRadio(false, "", "", "");
+    }
+
     getIO().emit('media_update', mediaState);
     
     res.json({ success: true });
@@ -94,7 +121,6 @@ router.post('/media/update-system', (req: Request, res: Response) => {
 
 // --- POST: Sterowanie Radiem ---
 router.post('/media/radio/status', (req: Request, res: Response) => {
-    // To jest fallback, ale główna logika jest w /control
     res.json({ success: true });
 });
 
@@ -114,50 +140,44 @@ router.post('/media/control', async (req: Request, res: Response) => {
     const { action, value } = req.body;
     
     try {
-        // 🔥 Ustawiamy czas ostatniej akcji -> Aktywuje BLOKADĘ MONITORA
-        lastControlTime = Date.now();
+        lastControlTime = Date.now(); // Aktywuj blokadę monitora na 4 sekundy
 
         // 1. Głośność
         if (action === 'set_volume') {
-            const vol = parseInt(value); // Zamiana na liczbę
+            const vol = parseInt(value);
             await loudness.setVolume(vol);
-            
-            // POPRAWKA: Jeśli 0% -> Włącz Mute, w przeciwnym razie -> Wyłącz Mute
-            if (vol === 0) {
-                await loudness.setMuted(true);
-            } else {
-                await loudness.setMuted(false);
-            }
+            if (vol === 0) await loudness.setMuted(true);
+            else await loudness.setMuted(false);
         } else if (action === 'volume_up') {
             const v = await loudness.getVolume();
             await loudness.setVolume(Math.min(v + 5, 100));
-            await loudness.setMuted(false); // Przy pogłaśnianiu zawsze odmutuj
+            await loudness.setMuted(false);
         } else if (action === 'volume_down') {
             const v = await loudness.getVolume();
             const newVol = Math.max(v - 5, 0);
             await loudness.setVolume(newVol);
-            
-            // Tu też warto dodać logikę dla przycisku:
-            if (newVol === 0) await loudness.setMuted(true);
         }
         
-        // 2. Obsługa Radia (Start)
+        // 2. Start Radia
         if (action === 'play_radio' && value) {
-             mediaState = {
+            console.log(`📻 Start Radia: ${value.title}`);
+            
+            // NAJWAŻNIEJSZE: Najpierw pauzujemy Spotify/System, żeby się nie gryzło
+            if (isWindows) {
+                executePythonControl('pause');
+            }
+
+            mediaState = {
                 source: "Radio",
                 status: "Playing",
                 title: value.title,
                 artist: "Live Stream",
                 streamUrl: value.url,
-                cover: "style-css/img/radio.svg" //
+                cover: "style-css/img/radio.svg" 
             };
             setServerRadio(true, value.title, "Live", value.url);
             
-            // Natychmiast powiadamiamy frontend, żeby pokazał widget
             getIO().emit('media_update', mediaState);
-            
-            // Jeśli jesteśmy na Windows, pauzujemy Spotify w tle (żeby nie grały na raz)
-           //  if (isWindows) executePythonControl('pause');
         }
         
         // 3. Pauza Radia
@@ -169,7 +189,12 @@ router.post('/media/control', async (req: Request, res: Response) => {
         // 4. Sterowanie Systemem (Spotify/YouTube)
         else if (isWindows && ['play', 'pause', 'playpause', 'next', 'prev'].includes(action)) {
              
-             // Ustalmy nowy status optymistycznie
+             // Jeśli sterujemy systemem, to znaczy że chcemy wyjść z trybu Radia
+             if (mediaState.source === 'Radio' && action === 'play') {
+                 setServerRadio(false, "", "", "");
+                 mediaState.source = 'System';
+             }
+
              let newStatus = mediaState.status;
              if (action === 'pause') newStatus = 'Paused';
              if (action === 'play') newStatus = 'Playing';
@@ -177,17 +202,12 @@ router.post('/media/control', async (req: Request, res: Response) => {
                  newStatus = (mediaState.status === 'Playing') ? 'Paused' : 'Playing';
              }
              
-             // Jeśli gra Radio, zostawiamy 'Radio', żeby interfejs się nie pogubił.
              if (mediaState.source !== 'Radio') {
                  mediaState.source = 'System';
+                 mediaState.status = newStatus;
              }
 
-             // Aktualizujemy status
-             mediaState.status = newStatus;
-
-             // Wysyłamy aktualizację do frontendu
              getIO().emit('media_update', mediaState);
-            
              executePythonControl(action);
         }
 
@@ -198,7 +218,7 @@ router.post('/media/control', async (req: Request, res: Response) => {
     }
 });
 
-// Helper do uruchamiania Pythona (Control Media)
+// Helper do uruchamiania Pythona
 function executePythonControl(action: string) {
     const exec = require('child_process').exec;
     const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
@@ -217,7 +237,6 @@ function executePythonControl(action: string) {
     exec(cmd, { cwd: SCRIPTS_DIR }, () => {});
 }
 
-// Konfiguracja
 router.get('/config', (req, res) => {
     res.json({ clockFormat: process.env.CLOCK_FORMAT || '12' });
 });

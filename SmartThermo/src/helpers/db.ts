@@ -20,7 +20,7 @@ export const connectDB = async () => {
         },
         connectTimeoutMS: 5000,         
         serverSelectionTimeoutMS: 5000, 
-        family: 4 // WYMUSZENIE IPv4
+       // family: 4 // WYMUSZENIE IPv4
     });
 
     try {
