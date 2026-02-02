@@ -5,7 +5,6 @@ import path from "path";
 
 // Importy modułów (Twoje istniejące trasy)
 import weatherRoutes from './routes/weather';
-import spotifyRoutes from './routes/spotify';
 import bluetoothRoutes from './routes/bluetooth';
 import mediaRoutes from './routes/media';
 import debugRoutes from './routes/debug';
@@ -56,7 +55,6 @@ class App {
     this.server.use('/api/weather', weatherRoutes);
     this.server.use('/api/bluetooth', bluetoothRoutes);
     this.server.use('/api', mediaRoutes);
-    this.server.use('/api/spotify', spotifyRoutes);
     this.server.use('/api/debug', debugRoutes);
     this.server.use('/api/air', airRoutes);
     this.server.use('/api/daily', dailyRoutes);

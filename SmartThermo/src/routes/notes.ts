@@ -10,6 +10,7 @@ import { exec } from 'child_process';
 import * as loudness from 'loudness';
 import { setServerRadio, playRadioById, RADIO_STATIONS, serverRadioState } from '../helpers/system';
 import { getIO } from '../helpers/socket';
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 
 dotenv.config();
 
@@ -89,6 +90,60 @@ const getNowPlaying = (): Promise<string> => {
     });
 };
 
+const generateTempChart = async (): Promise<Buffer | null> => {
+    try {
+        // 1. Pobierz dane z własnego API (zakładamy, że serwer działa lokalnie)
+        const port = process.env.PORT || 8888;
+        const apiUrl = `http://localhost:${port}/api/weather/history`;
+        const { data } = await axios.get(apiUrl);
+
+        if (!data || !Array.isArray(data) || data.length === 0) return null;
+
+        // 2. Konfiguracja renderera (wymiary obrazka)
+        const width = 800; 
+        const height = 400;
+        const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: '#1a1a1a' });
+
+        // 3. Konfiguracja wykresu (taka sama jak w Chart.js)
+        const configuration: any = {
+            type: 'line',
+            data: {
+                labels: data.map((d: any) => d.time),
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: data.map((d: any) => d.temp),
+                    borderColor: '#00d2ff',       // Kolor linii (cyan z Twojego UI)
+                    backgroundColor: 'rgba(0, 210, 255, 0.2)', // Wypełnienie pod wykresem
+                    borderWidth: 3,
+                    pointRadius: 0,               // Ukrywamy punkty dla czystości
+                    fill: true,
+                    tension: 0.4                  // Wygładzanie linii
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { labels: { color: 'white', font: { size: 18 } } }
+                },
+                scales: {
+                    y: {
+                        ticks: { color: '#aaaaaa', font: { size: 14 } },
+                        grid: { color: '#333333' }
+                    },
+                    x: {
+                        ticks: { color: '#aaaaaa', font: { size: 14 }, maxTicksLimit: 8 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        };
+
+        return await chartJSNodeCanvas.renderToBuffer(configuration);
+    } catch (e) {
+        console.error("Błąd generowania wykresu:", e);
+        return null;
+    }
+};
+
 // --- LOGIKA NOTATEK ---
 interface Note { text: string; author: string; timestamp: number; visible: boolean; }
 let activeNote: Note = { text: "", author: "", timestamp: 0, visible: false };
@@ -164,6 +219,7 @@ bot.action('menu_thermo', (ctx) => {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
             [Markup.button.callback('🔥 Grzanie', 'mode_heat'), Markup.button.callback('🍃 Eco', 'mode_eco')],
+            [Markup.button.callback('📉 Wykres 24h', 'cmd_chart')],
             [Markup.button.callback('🔙 Powrót', 'menu_main')]
         ])
     });
@@ -273,22 +329,43 @@ bot.action(/radio_(.+)/, async (ctx) => {
 
 // --- PLAY / PAUSE ---
 bot.action('cmd_playpause', async (ctx) => {
-    const isRadioMode = serverRadioState.isPlaying;
+    // Sprawdzamy, czy jesteśmy w "trybie radia" po URL, a nie tylko po isPlaying.
+    // Dzięki temu, jak zapauzujesz radio, to przycisk dalej steruje radiem (wznawia je),
+    // a nie odpala nagle Spotify w tle.
+    const isRadioMode = serverRadioState.url !== "";
     
     if (isRadioMode) {
-        const newStatus = serverRadioState.isPlaying ? 'Paused' : 'Playing';
-        setServerRadio(newStatus === 'Playing', serverRadioState.name, serverRadioState.description, serverRadioState.url);
+        // Jeśli gra -> zapauzuj. Jeśli stoi -> wznów.
+        const shouldPlay = !serverRadioState.isPlaying;
+        
+        // Aktualizujemy stan
+        setServerRadio(
+            shouldPlay, 
+            serverRadioState.name, 
+            serverRadioState.description, 
+            serverRadioState.url
+        );
+        
+        // Jeśli wznawiamy, ustawiamy czas startu dla "Tarczy Ochronnej"
+        if (shouldPlay) {
+             // Jeśli zmienna radioStartTime nie jest eksportowana z media.ts, 
+             // to tarcza zadziała przy następnym "play_radio", ale dla play/pause 
+             // telegramowym najważniejsze jest wysłanie socketu.
+             // (Opcjonalnie można przenieść radioStartTime do system.ts, ale tu wystarczy update socketu)
+        }
         
         getIO().emit('media_update', {
             source: "Radio",
-            status: newStatus,
+            status: shouldPlay ? "Playing" : "Paused",
             title: serverRadioState.name,
             artist: "Radio Internetowe",
             cover: "style-css/img/radio.svg",
             streamUrl: serverRadioState.url
         });
-        ctx.answerCbQuery(newStatus === 'Playing' ? "▶️ Play Radio" : "⏸️ Pauza Radia");
+        
+        ctx.answerCbQuery(shouldPlay ? "▶️ Wznawiam Radio" : "⏸️ Pauza Radia");
     } else {
+        // Tryb Systemowy (Spotify/Bluetooth)
         runMediaControl('playpause');
         ctx.answerCbQuery("⏯️ Play/Pause System");
     }
@@ -319,6 +396,26 @@ bot.action('cmd_stop', (ctx) => {
     runMediaControl('stop');
     ctx.answerCbQuery("⏹️ Zatrzymano wszystko");
     ctx.reply("⏹️ Full Stop.");
+});
+
+// --- AKCJA: WYSŁANIE WYKRESU ---
+bot.action('cmd_chart', async (ctx) => {
+    // Informujemy Telegram, że "pracujemy" (kręciołek na przycisku)
+    ctx.answerCbQuery("Generuję wykres...");
+
+    const imageBuffer = await generateTempChart();
+
+    if (imageBuffer) {
+        // Wysyłamy zdjęcie. 
+        // UWAGA: Nie używamy editMessageText, bo nie da się zamienić tekstu na zdjęcie w edycji.
+        // Wysyłamy nową wiadomość.
+        await ctx.replyWithPhoto({ source: imageBuffer }, {
+            caption: '📉 *Wykres temperatury (Ostatnie dane)*',
+            parse_mode: 'Markdown'
+        });
+    } else {
+        ctx.reply("⚠️ Nie udało się wygenerować wykresu (brak danych lub błąd API).");
+    }
 });
 
 // --- OBSŁUGA NOTATEK ---

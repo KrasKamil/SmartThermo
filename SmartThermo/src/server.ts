@@ -97,12 +97,14 @@ const startMediaMonitor = () => {
 
     console.log(`🎵 Uruchamiam Monitor Mediów: ${pythonCmd}`);
     
-    const pyProcess = spawn(pythonCmd, [scriptPath]);
+    const pyProcess = spawn(pythonCmd, ['-u', scriptPath]);
 
     pyProcess.stdout.on('data', (data) => {
         const msg = data.toString().trim();
         // Filtrujemy logi, żeby nie śmiecić, pokazujemy tylko zmiany
         if (msg && msg.startsWith('🎵')) console.log(`[MEDIA] ${msg}`);
+        // DEBUG BLUETOOTH
+        //if (msg) console.log(`[MEDIA RAW] ${msg}`);
     });
 
     pyProcess.stderr.on('data', (data) => {
