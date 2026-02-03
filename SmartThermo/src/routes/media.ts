@@ -2,13 +2,22 @@
 import { Router, Request, Response } from 'express';
 import * as loudness from 'loudness';
 import { getIO } from '../helpers/socket';
-import { isWindows, serverRadioState, setServerRadio, RADIO_STATIONS } from '../helpers/system';
+import { 
+    isWindows, 
+    serverRadioState, 
+    setServerRadio, 
+    RADIO_STATIONS,
+    isRadioProtected
+} from '../helpers/system';
 import path from 'path';
 import fs from 'fs';
+import { exec } from 'child_process';
 
 const router = Router();
 
-// PAMIĘĆ SERWERA
+// ════════════════════════════════════════════════════════════════════════════
+// STAN SERWERA (PAMIĘĆ TRWAŁA)
+// ════════════════════════════════════════════════════════════════════════════
 let mediaState = {
     source: "System", 
     status: "Stopped",
@@ -18,206 +27,220 @@ let mediaState = {
     cover: ""
 };
 
+// ✅ BLOKADA MONITORA (TTL - Time To Live)
 let lastControlTime = 0; 
-let radioStartTime = 0; 
-const MONITOR_LOCK_TIME = 4000;
-const RADIO_SHIELD_TIME = 6000;
+const MONITOR_LOCK_TTL = 4000; // 4 sekundy blokady po akcji użytkownika
 
-// --- GET: Listy Radiowe ---
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 1: LISTA STACJI RADIOWYCH
+// ════════════════════════════════════════════════════════════════════════════
 router.get('/radio/list', (req, res) => {
     const frontendList = RADIO_STATIONS.map(s => ({
-        id: s.id, title: s.title, subtitle: s.subtitle, streamUrl: s.streamUrl
+        id: s.id, 
+        title: s.title, 
+        subtitle: s.subtitle, 
+        streamUrl: s.streamUrl
     }));
     res.json(frontendList);
 });
 
-// --- GET: Aktualny Stan ---
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 2: AKTUALNY STAN ODTWARZACZA
+// ════════════════════════════════════════════════════════════════════════════
 router.get('/media/now-playing', (req, res) => {
     res.json(mediaState);
 });
 
-// --- POST: Główny update z Pythona (Monitor) ---
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 3: UPDATE Z PYTHONA (MONITOR MEDIÓW) - NAPRAWIONY
+// ════════════════════════════════════════════════════════════════════════════
 router.post('/media/update-system', (req: Request, res: Response) => {
     const data = req.body;
     const now = Date.now();
 
-    // 1. Jeśli właśnie coś klikaliśmy w UI, ignorujemy update przez chwilę
-    if (now - lastControlTime < MONITOR_LOCK_TIME) {
-        return res.json({ success: true, ignored: true, reason: "User Interaction Lock" });
+    // ────────────────────────────────────────────────────────────────────────
+    // BLOKADA 1: Interakcja użytkownika (ignoruj monitor przez 4s)
+    // ────────────────────────────────────────────────────────────────────────
+    if (now - lastControlTime < MONITOR_LOCK_TTL) {
+        return res.json({ 
+            success: true, 
+            ignored: true, 
+            reason: "User Interaction Lock (TTL)" 
+        });
     }
 
-    // 2. LOGIKA RADIA (TARCZA OCHRONNA)
-    if (mediaState.source === 'Radio' && mediaState.status === 'Playing') {
+    // ────────────────────────────────────────────────────────────────────────
+    // BLOKADA 2: PRIORYTET RADIA (Tarcza Ochronna - 6 sekund)
+    // ────────────────────────────────────────────────────────────────────────
+    if (serverRadioState.isPlaying) {
+        // ✅ NOWOŚĆ: Jeśli radio jest chronione (0-6s), ignoruj TYLKO Playing
+        if (isRadioProtected() && data.status === 'Playing') {
+            console.log("🛡️ [MEDIA] Radio Shield Active - ignoruję Playing (TTL: 6s)");
+            return res.json({ 
+                success: true, 
+                ignored: true, 
+                reason: "Radio Shield (Playing blocked for 6s)" 
+            });
+        }
         
-        // 🔥 NOWOŚĆ: TARCZA RADIA 🔥
-        // Jeśli Radio zostało włączone mniej niż X sekund temu, ignorujemy Bluetooth/Spotify
-        // nawet jeśli Python krzyczy, że "coś tam gra".
-        if (now - radioStartTime < RADIO_SHIELD_TIME) {
-             console.log("🛡️ Radio Shield: Ignoruję sygnał z systemu (Bluetooth/Spotify) podczas rozruchu radia.");
-             return res.json({ success: true, ignored: true, reason: "Radio Shield Active" });
-        }
-
-        // Jeśli Python wykrył, że coś gra (Spotify lub Bluetooth) PO upływie czasu ochronnego
+        // ✅ PO UPŁYWIE OCHRONY: Jeśli coś zaczęło grać, wyłącz radio
         if (data.status === 'Playing') {
-            
-            // Opcjonalnie: Dodatkowe zabezpieczenie - jeśli to Bluetooth, upewnij się, że nie jest to "duch"
-            // Ale na razie prosta logika: jeśli coś nowego weszło po 6 sekundach -> wyłączamy radio
-            console.log("🎵 Wykryto zewnętrzne źródło - zatrzymuję Radio serwerowe.");
+            console.log("🎵 [MEDIA] Zewnętrzne źródło przejęło kontrolę - wyłączam Radio");
             setServerRadio(false, "", "", "");
-        } else {
-            // Jeśli system stoi, a my gramy Radio -> ignoruj update z Pythona
-            return res.json({ success: true, ignored: true });
+            // KONTYNUUJ przetwarzanie (nie return!)
+        }
+        // Jeśli system stoi (Paused/Stopped), a radio gra -> ignoruj
+        else {
+            return res.json({ 
+                success: true, 
+                ignored: true,
+                reason: "Radio ma priorytet (system stoi)" 
+            });
         }
     }
 
-    // 3. Aktualizacja stanu
+    // ────────────────────────────────────────────────────────────────────────
+    // AKTUALIZACJA STANU (Spotify/Bluetooth/System)
+    // ────────────────────────────────────────────────────────────────────────
+    const previousState = JSON.stringify(mediaState);
+    
     mediaState = {
         source: data.source || "System", 
-        status: data.status,
-        title: data.title,
-        artist: data.artist,
+        status: data.status || "Stopped",
+        title: data.title || "",
+        artist: data.artist || "",
         streamUrl: "",
         cover: data.cover || ""
     };
     
-    getIO().emit('media_update', mediaState);
+    // ✅ NOWOŚĆ: Loguj tylko ZMIANY stanu (nie spam co sekundę)
+    if (JSON.stringify(mediaState) !== previousState) {
+        console.log(`🎵 [MEDIA] Update: ${mediaState.source} | ${mediaState.status} | ${mediaState.title || 'Brak tytułu'}`);
+        getIO().emit('media_update', mediaState);
+    }
+    
     res.json({ success: true });
 });
 
-// --- GET: Głośność ---
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 4: GŁOŚNOŚĆ (GET)
+// ════════════════════════════════════════════════════════════════════════════
 router.get('/media/volume', async (req, res) => {
     try {
         const vol = await loudness.getVolume();
         const muted = await loudness.getMuted();
         res.json({ volume: muted ? 0 : vol, muted: muted });
-    } catch { res.json({ volume: 50 }); }
+    } catch (e) { 
+        console.error("❌ [VOLUME] Błąd odczytu:", e);
+        res.json({ volume: 50 }); 
+    }
 });
 
-// --- POST: Sterowanie ---
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 5: STEROWANIE MEDIAMI (POST)
+// ════════════════════════════════════════════════════════════════════════════
 router.post('/media/control', async (req: Request, res: Response) => {
     const { action, value } = req.body;
-    lastControlTime = Date.now(); // Blokujemy monitor na chwilę
+    
+    // ✅ NOWOŚĆ: Aktualizujemy blokadę monitora (TTL)
+    lastControlTime = Date.now();
 
     try {
-        // Głośność
-        if (action === 'set_volume') await loudness.setVolume(parseInt(value));
+        // ──────────────────────────────────────────────────────────────────
+        // AKCJA: GŁOŚNOŚĆ
+        // ──────────────────────────────────────────────────────────────────
+        if (action === 'set_volume') {
+            await loudness.setVolume(parseInt(value));
+        } 
         else if (action === 'volume_up') {
-             const v = await loudness.getVolume();
-             await loudness.setVolume(Math.min(v + 5, 100));
+            const v = await loudness.getVolume();
+            await loudness.setVolume(Math.min(v + 5, 100));
         } 
         else if (action === 'volume_down') {
-             const v = await loudness.getVolume();
-             await loudness.setVolume(Math.max(v - 5, 0));
+            const v = await loudness.getVolume();
+            await loudness.setVolume(Math.max(v - 5, 0));
         }
         
-        // Radio START
+        // ──────────────────────────────────────────────────────────────────
+        // AKCJA: WŁĄCZ RADIO
+        // ──────────────────────────────────────────────────────────────────
         else if (action === 'play_radio' && value) {
-            if (isWindows) executePythonControl('pause'); // Zatrzymaj Spotify
-
-            // 🔥 USTAWIAMY CZAS STARTU RADIA (AKTYWACJA TARCZY)
-            radioStartTime = Date.now(); 
+            // 1. Zatrzymaj systemowy player (Spotify/YouTube)
+            if (isWindows) executePythonControl('pause');
             
-            mediaState = {
-                source: "Radio", status: "Playing",
-                title: value.title, artist: "Live Stream",
-                streamUrl: value.url, cover: "style-css/img/radio.svg"
-            };
+            // 2. Ustaw stan radia (+ aktywuj TTL w system.ts)
             setServerRadio(true, value.title, "Live", value.url);
+            
+            // 3. Aktualizuj pamięć serwera
+            mediaState = {
+                source: "Radio", 
+                status: "Playing",
+                title: value.title, 
+                artist: "Radio Internetowe",
+                streamUrl: value.url, 
+                cover: "style-css/img/radio.svg"
+            };
+            
+            // 4. Wyślij do frontendu
             getIO().emit('media_update', mediaState);
+            console.log(`📻 [MEDIA] Radio START: ${value.title}`);
         }
-        // Radio PAUSE
+        
+        // ──────────────────────────────────────────────────────────────────
+        // AKCJA: PAUZA RADIA
+        // ──────────────────────────────────────────────────────────────────
         else if (action === 'pause' && mediaState.source === 'Radio') {
             mediaState.status = 'Paused';
             setServerRadio(false, mediaState.title, "Paused", mediaState.streamUrl);
-            
             getIO().emit('media_update', mediaState);
+            console.log(`⏸️ [MEDIA] Radio PAUSED`);
         }
 
-        // System Control (Play/Pause/Next)
+        // ──────────────────────────────────────────────────────────────────
+        // AKCJA: SYSTEM (PLAY/PAUSE/NEXT)
+        // ──────────────────────────────────────────────────────────────────
         else {
-             // Jeśli gramy Radio i wciskamy Play/Next (Systemowe) -> Wychodzimy z Radia
-             if (mediaState.source === 'Radio') {
-                 setServerRadio(false, "", "", "");
-                 mediaState.source = 'System';
-             }
-             if (isWindows) executePythonControl(action);
+            // Jeśli grało Radio -> wychodzimy z trybu Radio
+            if (mediaState.source === 'Radio') {
+                setServerRadio(false, "", "", "");
+                mediaState.source = 'System';
+                console.log(`🔄 [MEDIA] Przełączam na System (z Radia)`);
+            }
+            
+            // Wysyłamy komendę do Pythona (Windows)
+            if (isWindows) executePythonControl(action);
         }
 
         res.json({ status: 'success' });
     } catch (e) {
+        console.error("❌ [CONTROL] Błąd:", e);
         res.status(500).json({ error: 'Control Error' });
     }
 });
 
-// --- GET: Głośność ---
-router.get('/media/volume', async (req, res) => {
-    try {
-        const vol = await loudness.getVolume();
-        const muted = await loudness.getMuted();
-        res.json({ volume: muted ? 0 : vol, muted: muted });
-    } catch { res.json({ volume: 50 }); }
-});
-
-// --- POST: Sterowanie ---
-router.post('/media/control', async (req: Request, res: Response) => {
-    const { action, value } = req.body;
-    lastControlTime = Date.now(); // Blokujemy monitor na chwilę
-
-    try {
-        // Głośność
-        if (action === 'set_volume') await loudness.setVolume(parseInt(value));
-        else if (action === 'volume_up') {
-             const v = await loudness.getVolume();
-             await loudness.setVolume(Math.min(v + 5, 100));
-        } 
-        else if (action === 'volume_down') {
-             const v = await loudness.getVolume();
-             await loudness.setVolume(Math.max(v - 5, 0));
-        }
-        
-        // Radio
-        else if (action === 'play_radio' && value) {
-            if (isWindows) executePythonControl('pause'); // Zatrzymaj Spotify
-            
-            mediaState = {
-                source: "Radio", status: "Playing",
-                title: value.title, artist: "Live Stream",
-                streamUrl: value.url, cover: "style-css/img/radio.svg"
-            };
-            setServerRadio(true, value.title, "Live", value.url);
-            getIO().emit('media_update', mediaState);
-        }
-        else if (action === 'pause' && mediaState.source === 'Radio') {
-            mediaState.status = 'Paused';
-            getIO().emit('media_update', mediaState);
-        }
-
-        // System Control (Play/Pause/Next)
-        else {
-             if (mediaState.source === 'Radio') {
-                 setServerRadio(false, "", "", "");
-                 mediaState.source = 'System';
-             }
-             if (isWindows) executePythonControl(action);
-             
-             // Opcjonalnie: optymistyczny update UI
-             // getIO().emit('media_update', ...);
-        }
-
-        res.json({ status: 'success' });
-    } catch (e) {
-        res.status(500).json({ error: 'Control Error' });
-    }
-});
-
+// ════════════════════════════════════════════════════════════════════════════
+// ENDPOINT 6: KONFIGURACJA (FORMAT ZEGARA)
+// ════════════════════════════════════════════════════════════════════════════
 router.get('/config', (req, res) => {
     res.json({ clockFormat: process.env.CLOCK_FORMAT || '12' });
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+// HELPER: PYTHON CONTROL (Windows)
+// ════════════════════════════════════════════════════════════════════════════
 function executePythonControl(action: string) {
-    const exec = require('child_process').exec;
-    const cmd = `"${path.join(process.cwd(), 'env-media/Scripts/python.exe')}" "${path.join(process.cwd(), 'scripts/control_media.py')}" ${action}`;
-    exec(cmd, { cwd: path.join(process.cwd(), 'scripts') }, () => {});
+    const venvPython = path.join(process.cwd(), 'env-media/Scripts/python.exe');
+    const script = path.join(process.cwd(), 'scripts/control_media.py');
+    
+    if (!fs.existsSync(venvPython) || !fs.existsSync(script)) {
+        console.warn("⚠️ [PYTHON] Brak skryptu lub VENV");
+        return;
+    }
+    
+    const cmd = `"${venvPython}" "${script}" ${action}`;
+    exec(cmd, { cwd: path.join(process.cwd(), 'scripts') }, (err) => {
+        if (err) console.error(`❌ [PYTHON] Error: ${err.message}`);
+    });
 }
 
 export default router;

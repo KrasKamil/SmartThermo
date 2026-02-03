@@ -1,3 +1,4 @@
+# scripts/control_media.py
 import asyncio
 import sys
 # Korzystamy z tej samej biblioteki co get_media.py
