@@ -30,7 +30,7 @@ except ImportError:
     IS_WINDOWS = False
 
 API_URL = "http://localhost:8888/api/media/update-system"
-INTERVAL = 2.0
+INTERVAL = 0.8
 
 current_state = {}
 
@@ -132,6 +132,16 @@ async def get_winsdk_media():
         if info.playback_status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING: status_str = "Playing"
         elif info.playback_status == GlobalSystemMediaTransportControlsSessionPlaybackStatus.PAUSED: status_str = "Paused"
 
+        # 🔥 NAPRAWA: Pobieramy prawdziwą nazwę aplikacji (np. Spotify.exe, Chrome)
+        app_id = session.source_app_user_model_id if session.source_app_user_model_id else "System"
+        
+        # Upraszczamy nazwę dla czytelności
+        source_name = "System"
+        if "spotify" in app_id.lower(): source_name = "Spotify"
+        elif "chrome" in app_id.lower(): source_name = "Chrome"
+        elif "edge" in app_id.lower(): source_name = "Edge"
+        elif "firefox" in app_id.lower(): source_name = "Firefox"
+
         cover_data = ""
         try:
             if props.thumbnail:
@@ -146,14 +156,14 @@ async def get_winsdk_media():
         except: pass
 
         return {
-            "source": "System",
+            "source": source_name, # 🔥 Teraz wysyłamy np. "Spotify" albo "Chrome"
             "status": status_str,
             "title": props.title if props.title else "",
             "artist": props.artist if props.artist else "",
             "cover": cover_data 
         }
     except: return None
-
+    
 # --- GŁÓWNA PĘTLA ---
 async def loop():
     global current_state

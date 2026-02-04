@@ -1,4 +1,3 @@
-// src/app.ts
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -26,13 +25,11 @@ class App {
     this.server.use(express.json({ limit: '10mb' }));
     this.server.use(express.urlencoded({ limit: '10mb', extended: true }));
     
-    // Logger
+    // Logger (wyciszamy spamujące endpointy)
     this.server.use((req, res, next) => {
-      // Wyłącz logowanie dla spamujących endpointów
       if (req.method === 'GET' && (req.originalUrl.startsWith('/api/media/now-playing') || req.originalUrl.startsWith('/api/notes'))) {
         return next();
       }
-      // Wyłącz też logowanie payloadu obrazków, bo zaśmiecą konsolę, ale loguj błędy
       const start = Date.now();
       res.on('finish', () => {
         const duration = Date.now() - start;
@@ -50,21 +47,22 @@ class App {
   }
 
   routes() {
-    // API Routes
-    
+    // 🔥 PRZEKIEROWANIE STARTOWE (http://localhost:8888 -> /vapage.html)
+    this.server.get('/', (req, res) => {
+        res.redirect('/vapage.html');
+    });
+
+    // Rejestracja tras API
     this.server.use('/api/weather', weatherRoutes);
     this.server.use('/api/bluetooth', bluetoothRoutes);
-    this.server.use('/api', mediaRoutes);
+    this.server.use('/api/media', mediaRoutes);
     this.server.use('/api/debug', debugRoutes);
     this.server.use('/api/air', airRoutes);
     this.server.use('/api/daily', dailyRoutes);
     this.server.use('/api/notes', notesRoutes);
-
-    // --- ZMIANA: Obsługa Strony Głównej ---
-    // Jeśli ktoś wejdzie na "localhost:8888/", wyślij mu vapage.html
-    this.server.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, '../public/vapage.html'));
-    });
+    
+    // Fallback dla media (zachowanie kompatybilności)
+    this.server.use('/api', mediaRoutes); 
   }
 }
 

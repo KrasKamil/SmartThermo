@@ -15,15 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
 
     socket.on('connect', () => {
-        console.log("🟢 Połączono z Socket.io (Real-time)");
+        console.log("🟢 Połączono z Socket.io");
     });
 
-    socket.on('weather_update', (data) => {
-        updateWeatherUI(data);
-    });
+    socket.on('weather_update', (data) => updateWeatherUI(data));
 
+    // 🔥 ODBIÓR DANYCH Z SERWERA 🔥
     socket.on('media_update', (data) => {
-        // console.log("🎵 Media Update (Socket):", data); // Opcjonalne logowanie
+        console.log("🎵 Socket Update:", data);
         updateUnifiedPlayerUI(data);
     });
 
@@ -32,10 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchWeather();
     initChartToggle();
     loadStations();
-    initVoiceAssistant();
-    initAirQuality();
-    startDailyInterval();
     initNotes();
+    initVoiceAssistant();
+    startDailyInterval();
+
+    // Inicjalizacja Audio
+    const audioPlayer = document.getElementById('radio-audio');
+    if (audioPlayer) {
+        audioPlayer.onerror = () => console.error("Audio Error:", audioPlayer.error);
+    }
+
+    initAirQuality();
     setupEventListeners();
 
     // Pobierz stan tylko jeśli radio NIE gra
