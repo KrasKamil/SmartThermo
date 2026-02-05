@@ -13,6 +13,7 @@ import { addNote } from '../routes/notes';
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'Brak tokena';
 const TELEGRAM_API_ROOT = process.env.TELEGRAM_API_ROOT || 'https://api.telegram.org';
 const ALLOWED_USERS: number[] = [8290453013, 8504057899];
+const API_KEY = process.env.API_KEY || 'twoje_haslo_z_env';
 
 // Ścieżki
 const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
@@ -44,7 +45,11 @@ const safeAnswer = async (ctx: any, text?: string) => {
 const triggerApiAction = async (action: string, value: any = null) => {
     try {
         const port = process.env.PORT || 8888;
-        await axios.post(`http://localhost:${port}/api/media/control`, { action, value });
+        await axios.post(
+            `http://localhost:${port}/api/media/control`, 
+            { action, value },
+            { headers: { 'x-api-key': API_KEY } } 
+        );
     } catch (e) {
         console.error("Telegram API trigger fail:", e);
     }
@@ -53,7 +58,10 @@ const triggerApiAction = async (action: string, value: any = null) => {
 const getNowPlaying = async (): Promise<string> => {
     try {
         const port = process.env.PORT || 8888;
-        const res = await axios.get(`http://localhost:${port}/api/media/now-playing`);
+        const res = await axios.get(
+            `http://localhost:${port}/api/media/now-playing`,
+            { headers: { 'x-api-key': API_KEY } }
+        );
         const data = res.data;
 
         if (data.source === 'Radio' && data.status === 'Playing') {
@@ -71,7 +79,7 @@ const getNowPlaying = async (): Promise<string> => {
 const generateTempChart = async (): Promise<Buffer | null> => {
     try {
         const port = process.env.PORT || 8888;
-        const { data } = await axios.get(`http://localhost:${port}/api/weather/history`);
+        const { data } = await axios.get(`http://localhost:${port}/api/weather/history`,{ headers: { 'x-api-key': API_KEY } });
         if (!data || !Array.isArray(data) || data.length === 0) return null;
 
         const width = 800; 
@@ -245,7 +253,7 @@ async function runLoop() {
     if (!bot) return;
     try {
         const url = `${TELEGRAM_API_ROOT}/bot${TELEGRAM_TOKEN}/getUpdates?offset=${offset}&timeout=10`;
-        const res = await axios.get(url);
+        const res = await axios.get(url, { headers: { 'x-api-key': API_KEY } });
         if (res.data.ok && res.data.result.length > 0) {
             for (const u of res.data.result) {
                 offset = u.update_id + 1;

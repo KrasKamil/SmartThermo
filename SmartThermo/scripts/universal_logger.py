@@ -16,6 +16,10 @@ except Exception:
 # Konfiguracja
 load_dotenv()
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
+API_KEY = os.environ.get("API_KEY")
+if not API_KEY:
+    print("❌ BŁĄD CRITICAL: Brak API_KEY w pliku .env! Skrypt zatrzymany.")
+    sys.exit(1)
 
 # Parametry
 CITY = os.environ.get("CITY", "Kraków")
@@ -123,10 +127,11 @@ def flush_cache():
     
     remaining_data = []
     sent_count = 0
+    headers = {'x-api-key': API_KEY} if API_KEY else {}
 
     for item in cache_data:
         try:
-            res = requests.post(API_URL, json=item, timeout=2)
+            res = requests.post(API_URL, json=item, headers=headers, timeout=2)
             if res.status_code == 200:
                 sent_count += 1
             else:
@@ -157,9 +162,10 @@ def sendDataToServer():
         "wind": wind,
         "due_date": dt
     }
+    headers = {'x-api-key': API_KEY} if API_KEY else {}
     
     try:
-        response = requests.post(API_URL, json=data, timeout=5)
+        response = requests.post(API_URL, json=data, headers=headers, timeout=5)
         if response.status_code == 200:
             print(f"\n✅ API OK: {temperature}°C / {temp_o}°C")
             flush_cache()

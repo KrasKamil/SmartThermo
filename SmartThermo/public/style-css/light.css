@@ -947,3 +947,103 @@ body.light-mode {
 .light-mode button[onclick="openHistoryPopup()"] {
     box-shadow: 0 4px 15px rgba(224, 86, 253, 0.3) !important;
 }
+
+
+/* --- VOICE ASSISTANT OVERLAY (LIGHT MODE) --- */
+
+
+/* 1. Tło całego ekranu */
+
+.light-mode #voice-overlay {
+    background: rgba(255, 255, 255, 0.5) !important;
+    /* Mleczne tło */
+    backdrop-filter: blur(15px) !important;
+    /* Mocne rozmycie tła */
+}
+
+
+/* 2. Główny Box (Kontener) */
+
+.light-mode .voice-container {
+    background: rgba(255, 255, 255, 0.95) !important;
+    /* Prawie białe */
+    border: 1px solid rgba(214, 51, 132, 0.2) !important;
+    /* Różowa ramka */
+    box-shadow: 0 20px 50px rgba(166, 74, 201, 0.2) !important;
+    /* Fioletowy, miękki cień */
+    border-radius: 30px !important;
+}
+
+
+/* 3. Przycisk zamknięcia (X) */
+
+.light-mode .voice-container .close-btn {
+    color: #888 !important;
+    border-color: #eee;
+}
+
+.light-mode .voice-container .close-btn:hover {
+    color: #d63384 !important;
+    /* Różowy po najechaniu */
+    border-color: #d63384;
+}
+
+
+/* 4. Tekst statusu (np. "SŁUCHAM...") */
+
+.light-mode #voice-status {
+    color: #a64ac9 !important;
+    /* Fioletowy */
+    font-weight: bold;
+    letter-spacing: 3px;
+}
+
+
+/* 5. Rozmowa - Tekst użytkownika */
+
+.light-mode .text-user {
+    color: #666 !important;
+    /* Ciemnoszary */
+    font-style: italic;
+}
+
+
+/* 6. Rozmowa - Tekst AI */
+
+.light-mode .text-ai {
+    color: #333 !important;
+    /* Prawie czarny dla kontrastu */
+    text-shadow: none !important;
+    /* Usuwamy neonowy cień z dark mode */
+}
+
+
+/* 7. ANIMACJA KOŁA (Dopasowanie kolorów) */
+
+
+/* Myślenie (Processing) - Fiolet */
+
+.light-mode .circle-state.processing {
+    background-color: #a64ac9 !important;
+    color: #a64ac9 !important;
+    box-shadow: 0 0 20px rgba(166, 74, 201, 0.4) !important;
+}
+
+
+/* Mówienie (Speaking) - Róż (Zamiast Cyanu) */
+
+.light-mode .circle-state.speaking {
+    background-color: #d63384 !important;
+    color: #d63384 !important;
+    box-shadow: 0 0 20px rgba(214, 51, 132, 0.4) !important;
+}
+
+
+/* Pierścienie pulsujące */
+
+.light-mode .pulse-ring {
+    border-color: currentColor !important;
+    /* Dziedziczy kolor od koła */
+    opacity: 0.3;
+    /* Nieco bardziej widoczne na białym tle */
+}

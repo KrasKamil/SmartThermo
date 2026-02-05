@@ -10,6 +10,8 @@
         "clean": "rimraf dist"
     },
     "dependencies": {
+        "@google/genai": "^1.40.0",
+        "@google/generative-ai": "^0.24.1",
         "axios": "^1.13.2",
         "chart.js": "^4.5.1",
         "chartjs-node-canvas": "^5.0.0",

@@ -7,9 +7,34 @@ import { scanBluetooth, connectBluetooth } from './modules/bluetooth.js';
 import { initVoiceAssistant } from './modules/voice.js';
 import { toggleTheme, openPopup, closePopup, handleVolumeInput, setupEventListeners } from './modules/ui.js';
 import { initAirQuality, loadAirQuality } from './modules/air.js';
-import { startDailyInterval } from './modules/daily.js';
+import { initDaily } from './modules/daily.js';
 import { initNotes } from './modules/notes.js';
 import { state } from './modules/state.js';
+
+const API_KEY = window.ENV_API_KEY;
+
+if (!API_KEY) {
+    console.error("⛔ BRAK API KEY! Upewnij się, że plik .env istnieje na serwerze.");
+}
+
+const originalFetch = window.fetch;
+window.fetch = async function(url, options = {}) {
+    if (url.toString().startsWith('/api') || url.toString().includes(window.location.host)) {
+        if (!options.headers) {
+            options.headers = {};
+        }
+        // Dodaj nagłówek
+        if (options.headers instanceof Headers) {
+            options.headers.append('x-api-key', API_KEY);
+        } else if (Array.isArray(options.headers)) {
+            options.headers.push(['x-api-key', API_KEY]);
+        } else {
+            options.headers['x-api-key'] = API_KEY;
+        }
+    }
+    return originalFetch(url, options);
+};
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
@@ -33,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadStations();
     initNotes();
     initVoiceAssistant();
-    startDailyInterval();
+    initDaily();
 
     // Inicjalizacja Audio
     const audioPlayer = document.getElementById('radio-audio');

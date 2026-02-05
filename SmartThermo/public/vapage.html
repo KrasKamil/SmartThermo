@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" type="image/png" sizes="32x32" href="favicons.ico/favicon-32x32.png">
+    <script src="/config.js"></script>
 </head>
 
 <body>
@@ -123,10 +124,21 @@
     </div>
 
     <div id="voice-overlay" class="hidden">
-        <div class="voice-box glass-effect">
-            <div class="pulse-ring"></div>
-            <div id="voice-status">Słucham...</div>
+        <div class="voice-container glass-effect">
             <button class="close-btn" onclick="toggleVoicePopup(true)">×</button>
+
+            <div class="voice-visualizer">
+                <div id="voice-circle" class="circle-state listening"></div>
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring delay"></div>
+            </div>
+
+            <div id="voice-status">Słucham...</div>
+
+            <div id="voice-content" class="conversation-box">
+                <p id="user-text" class="text-user"></p>
+                <p id="ai-text" class="text-ai"></p>
+            </div>
         </div>
     </div>
 

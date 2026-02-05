@@ -1,0 +1,163 @@
+/* --- VOICE ASSISTANT OVERLAY --- */
+
+#voice-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    /* Ciemne tło */
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#voice-overlay:not(.hidden) {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.voice-container {
+    width: 500px;
+    max-width: 90%;
+    padding: 40px 20px;
+    text-align: center;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(20, 20, 20, 0.6);
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 210, 255, 0.1);
+}
+
+
+/* Animacja koła (Mózg AI) */
+
+.voice-visualizer {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#voice-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    z-index: 2;
+    transition: all 0.4s ease;
+    box-shadow: 0 0 15px currentColor;
+}
+
+
+/* Stany koła */
+
+.circle-state.listening {
+    background-color: #ff4757;
+    /* Czerwony = Nagrywanie */
+    color: #ff4757;
+    animation: breath 2s infinite ease-in-out;
+}
+
+.circle-state.processing {
+    background-color: #e056fd;
+    /* Fioletowy = Myślenie (LLM) */
+    color: #e056fd;
+    animation: spin 1s infinite linear;
+}
+
+.circle-state.speaking {
+    background-color: #00d2ff;
+    /* Niebieski = Mówienie */
+    color: #00d2ff;
+    animation: pulseTalk 0.5s infinite alternate;
+}
+
+
+/* Pierścienie pulsujące */
+
+.pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    opacity: 0;
+    animation: ripple 2s infinite;
+}
+
+.pulse-ring.delay {
+    animation-delay: 0.6s;
+}
+
+
+/* Tekst rozmowy */
+
+#voice-status {
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #aaa;
+    margin-bottom: 20px;
+}
+
+.conversation-box {
+    min-height: 50px;
+}
+
+.text-user {
+    font-size: 1.1em;
+    color: #ccc;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.text-ai {
+    font-size: 1.3em;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+
+/* Animacje Keyframes */
+
+@keyframes ripple {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
+}
+
+@keyframes breath {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@keyframes pulseTalk {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}

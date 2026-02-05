@@ -4,6 +4,8 @@ import requests
 import sys
 import json
 import base64
+import os
+from dotenv import load_dotenv
 
 # --- BIBLIOTEKI ---
 try:
@@ -29,7 +31,20 @@ try:
 except ImportError:
     IS_WINDOWS = False
 
-API_URL = "http://localhost:8888/api/media/update-system"
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, '..', '.env')
+
+# 2. Załaduj zmienne
+load_dotenv(env_path)
+
+# 3. Pobierz klucz (jeśli brak, wywal błąd)
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    print("❌ BŁĄD CRITICAL: Brak API_KEY w pliku .env! Skrypt zatrzymany.")
+    sys.exit(1)
+
+PORT = os.getenv("PORT", "8888") # Pobierz port lub domyślnie 8888
+API_URL = f"http://localhost:{PORT}/api/media/update-system"
 INTERVAL = 0.8
 
 current_state = {}
@@ -198,12 +213,16 @@ async def loop():
 
             # Wysyłka tylko przy zmianie
             if json.dumps(final_data) != json.dumps(current_state):
-                try:
-                    requests.post(API_URL, json=final_data, timeout=1)
-                    if tick % 5 == 0: 
-                        print(f"🚀 UPDATE: {final_data.get('source')} -> {final_data.get('status')}")
-                    current_state = final_data
-                except: pass
+                    try:
+                        # Używamy pobranego klucza
+                        headers = {'x-api-key': API_KEY}
+                        
+                        requests.post(API_URL, json=final_data, headers=headers, timeout=1)
+                        
+                        if tick % 5 == 0: 
+                            print(f"🚀 UPDATE: {final_data.get('source')} -> {final_data.get('status')}")
+                        current_state = final_data
+                    except: pass
             
             tick += 1
             
