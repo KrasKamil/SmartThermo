@@ -1047,3 +1047,38 @@ body.light-mode {
     opacity: 0.3;
     /* Nieco bardziej widoczne na białym tle */
 }
+
+
+/* --- Styl dla JASNEGO motywu --- */
+
+
+/* Zakładamy, że nadrzędny element (np. body) ma klasę .light-mode */
+
+.light-mode .daily-joke-box {
+    background: #f8f9fa !important;
+    /* Jasne szare tło */
+    border: 1px solid #ddd !important;
+    /* Delikatna ramka */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    /* Lekki cień dla głębi */
+}
+
+.light-mode .daily-joke-box h3 {
+    color: #666 !important;
+    /* Ciemnoszary nagłówek */
+}
+
+.light-mode .daily-joke-box #daily-joke-text {
+    color: #333 !important;
+    /* Ciemny tekst (prawie czarny) */
+}
+
+.light-mode .daily-joke-box .btn-text {
+    color: #007bff !important;
+    /* Ciemniejszy niebieski dla przycisku */
+}
+
+.light-mode .daily-joke-box .btn-text:hover {
+    color: #0056b3 !important;
+    /* Jeszcze ciemniejszy po najechaniu */
+}
