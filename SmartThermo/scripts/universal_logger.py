@@ -40,6 +40,8 @@ humidity = 0
 pressure = 0
 wind = "0 km/h"
 temp_o = 0
+condition_text = "Clouds" # Domyślna wartość
+icon_id = "03d"          # Domyślna ikona
 
 def readSensor():
     global temperature, humidity, pressure
@@ -69,7 +71,7 @@ def readSensor():
         pressure = round(random.uniform(1000, 1030), 1)
 
 def read_data_weather():
-    global wind, temp_o
+    global temp_o, pressure, wind, condition_text, icon_id
     try:
         url = f'https://api.openweathermap.org/data/2.5/weather?q={CITY},pl&appid={OPENWEATHER_API_KEY}'
         res = requests.get(url, timeout=5)
@@ -79,6 +81,10 @@ def read_data_weather():
             speed = math.ceil(filedata['wind']['speed'] * 3.6)
             wind = f'{speed} km/h'
             temp_o = math.ceil(round(filedata['main']['temp'] - 273.15, 2))
+            if "weather" in filedata and len(filedata["weather"]) > 0:
+                condition_text = filedata["weather"][0]["main"] # np. Rain, Clear, Snow
+                icon_id = filedata["weather"][0]["icon"]       # np. 10d, 01n
+                print(f"🌦️ Pogoda: {condition_text} ({icon_id})")
         else:
             print("Błąd OpenWeather:", filedata.get("message", "Unknown"))
     except Exception as e:
@@ -160,13 +166,17 @@ def sendDataToServer():
         "pressure": pressure,
         "temp_out": temp_o,
         "wind": wind,
-        "due_date": dt
+        "due_date": dt,
+        "condition": condition_text,
+        "icon": icon_id
+        
     }
     headers = {'x-api-key': API_KEY} if API_KEY else {}
     
     try:
         response = requests.post(API_URL, json=data, headers=headers, timeout=5)
         if response.status_code == 200:
+            print(data)
             print(f"\n✅ API OK: {temperature}°C / {temp_o}°C")
             flush_cache()
         else:

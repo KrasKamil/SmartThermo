@@ -68,7 +68,7 @@ const startServer = async () => {
         initTelegramBot();
 
         if (isDevMode) {
-            startPythonLogger();
+            //startPythonLogger();
             startMediaMonitor();
             // --- TRYB DEVELOPERSKI ---
             console.log("");

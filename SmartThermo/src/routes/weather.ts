@@ -19,7 +19,7 @@ const formatUnit = (value: any, unit: string): string => {
 router.get('/', async (req: Request, res: Response) => {
     const offlineData = {
         city: "Offline City",
-        temp_ins: "-", hum_ins: "-", pressure: "-", temp_out: "-", wind: "-",
+        temp_ins: "-", hum_ins: "-", pressure: "-", temp_out: "-", wind: "-",condition: "Clouds", icon: "03d",
         due_date: new Date().toLocaleString() + " (Offline)"
     };
 
@@ -40,7 +40,9 @@ router.get('/', async (req: Request, res: Response) => {
                 pressure: formatUnit(result.pressure, "hPa"),
                 temp_out: formatUnit(result.temp_out, "°C"),
                 wind: result.wind || "-", // Wiatr zostawiamy jak jest
-                due_date: result.due_date || new Date().toLocaleString()
+                due_date: result.due_date || new Date().toLocaleString(),
+                condition: result?.condition || "Clouds",
+                icon: result?.icon || "03d"
             };
             res.json(mappedData);
         } else {
@@ -109,8 +111,11 @@ router.post('/update', async (req: Request, res: Response) => {
         // Dodajemy timestamp serwera, żeby mieć pewność czasu
         const entry = {
             ...newData,
-            createdAt: new Date() 
-            // Python wysyła "due_date" jako string, to może zostać dla kompatybilności
+            condition: newData.condition || "Clouds", // Domyślna jeśli Python nie wyśle
+            icon: newData.icon || "03d",
+        
+            createdAt: new Date(),
+            due_date: newData.due_date
         };
 
         await db.collection(collName).insertOne(entry);
@@ -126,7 +131,9 @@ router.post('/update', async (req: Request, res: Response) => {
             pressure: formatUnit(entry.pressure, "hPa"),
             temp_out: formatUnit(entry.temp_out, "°C"),
             wind: entry.wind,
-            due_date: entry.due_date
+            due_date: entry.due_date,
+            condition: entry.condition,
+            icon: entry.icon
         };
 
         getIO().emit('weather_update', socketPayload);
