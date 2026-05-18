@@ -22,11 +22,11 @@ try:
 except Exception:
     pass
 
-# Import winsdk
+# Import winrt
 try:
-    from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager, GlobalSystemMediaTransportControlsSessionPlaybackStatus
-    from winsdk.windows.storage.streams import DataReader
-    from winsdk.windows.devices.enumeration import DeviceInformation, DeviceClass
+    from winrt.windows.media.control import GlobalSystemMediaTransportControlsSessionManager, GlobalSystemMediaTransportControlsSessionPlaybackStatus
+    from winrt.windows.storage.streams import DataReader
+    from winrt.windows.devices.enumeration import DeviceInformation, DeviceClass
     IS_WINDOWS = True
 except ImportError:
     IS_WINDOWS = False
@@ -132,7 +132,7 @@ def get_active_bt_device():
         return None, "Stopped"
 
 # --- 3. Media Systemowe ---
-async def get_winsdk_media():
+async def get_system_media():
     if not IS_WINDOWS: return None
     try:
         sessions = await GlobalSystemMediaTransportControlsSessionManager.request_async()
@@ -190,11 +190,11 @@ async def loop():
             final_data = {"status": "Stopped", "title": "", "artist": "", "cover": "", "source": "System"}
             
             # 1. Sprawdź System (Spotify)
-            winsdk_data = await get_winsdk_media()
+            system_data = await get_system_media()
             
             # Jeśli Spotify gra, ma priorytet
-            if winsdk_data and winsdk_data['status'] == 'Playing':
-                final_data = winsdk_data
+            if system_data and system_data['status'] == 'Playing':
+                final_data = system_data
             else:
                 # 2. Sprawdź Bluetooth + Analiza dźwięku
                 bt_name, bt_status = get_active_bt_device()

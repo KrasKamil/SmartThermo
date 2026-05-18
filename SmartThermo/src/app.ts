@@ -93,7 +93,7 @@ class App {
 
     //Pozwolenie frontendowi odczytać klucz z .env
     this.server.get('/config.js', (req, res) => {
-    const apiKey = process.env.API_KEY || '';
+    const apiKey = process.env.API_KEY || 'default_key';
     res.setHeader('Content-Type', 'application/javascript');
     res.send(`window.ENV_API_KEY = "${apiKey}";`);
   });

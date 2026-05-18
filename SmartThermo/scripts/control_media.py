@@ -2,9 +2,9 @@ import asyncio
 import sys
 
 try:
-    from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
+    from winrt.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
 except ImportError:
-    print("Brak biblioteki winsdk.")
+    print("Brak biblioteki winrt-Windows.Media.Control.")
     sys.exit(1)
 
 async def control_media(action):
