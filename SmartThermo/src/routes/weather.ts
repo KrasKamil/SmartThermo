@@ -71,7 +71,7 @@ router.get('/history', async (req: Request, res: Response) => {
 
         const formatted = history.reverse().map((item: any) => {
             // 👇 Logika "Hybrydowa": obsługuje i stare stringi ("21 °C") i nowe liczby (21)
-            let rawTemp = item.temp_ins;
+            const rawTemp = item.temp_ins;
             let finalTemp = 0;
 
             if (typeof rawTemp === 'number') {

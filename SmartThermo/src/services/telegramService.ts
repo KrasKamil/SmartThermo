@@ -1,8 +1,5 @@
 import { Telegraf, Markup } from 'telegraf';
 import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 
 // Helpery
@@ -15,10 +12,6 @@ const TELEGRAM_API_ROOT = process.env.TELEGRAM_API_ROOT || 'https://api.telegram
 const ALLOWED_USERS: number[] = [8290453013, 8504057899];
 const API_KEY = process.env.API_KEY || 'twoje_haslo_z_env';
 
-// Ścieżki
-const SCRIPTS_DIR = path.join(process.cwd(), 'scripts');
-const NIRCMD_PATH = path.join(SCRIPTS_DIR, 'nircmd.exe');
-
 let bot: Telegraf | null = null;
 if (TELEGRAM_TOKEN !== 'Brak tokena') {
     bot = new Telegraf(TELEGRAM_TOKEN, { telegram: { apiRoot: TELEGRAM_API_ROOT } });
@@ -27,8 +20,6 @@ if (TELEGRAM_TOKEN !== 'Brak tokena') {
 // ════════════════════════════════════════════════════════════════════════════
 // HELPERY
 // ════════════════════════════════════════════════════════════════════════════
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 🔥 Bezpieczne odpowiadanie na przyciski (Ignoruje błędy "query is too old")
 const safeAnswer = async (ctx: any, text?: string) => {
