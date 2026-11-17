@@ -1,10 +1,14 @@
 import { Telegraf, Markup } from 'telegraf';
 import axios from 'axios';
-import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
+import { createCanvas } from '@napi-rs/canvas';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 // Helpery
 import { RADIO_STATIONS } from '../helpers/system';
-import { addNote } from '../routes/notes'; 
+import { addNote } from '../routes/notes';
+
+// Rejestracja wszystkich komponentów Chart.js (wymagane przy bezpośrednim użyciu chart.js)
+Chart.register(...registerables);
 
 // Konfiguracja
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'Brak tokena';
@@ -37,9 +41,9 @@ const triggerApiAction = async (action: string, value: any = null) => {
     try {
         const port = process.env.PORT || 8888;
         await axios.post(
-            `http://localhost:${port}/api/media/control`, 
+            `http://localhost:${port}/api/media/control`,
             { action, value },
-            { headers: { 'x-api-key': API_KEY } } 
+            { headers: { 'x-api-key': API_KEY } }
         );
     } catch (e) {
         console.error("Telegram API trigger fail:", e);
@@ -59,7 +63,7 @@ const getNowPlaying = async (): Promise<string> => {
             return `📻 Radio: ${data.title}`;
         }
         if (data.status === 'Playing') {
-            return `🎵 ${data.artist || ''} - ${data.title || ''}`;
+            return `🎵 ${data.artist || ''}\n${data.title || ''}`;
         }
         return "Cisza (Pauza/Stop)";
     } catch {
@@ -70,14 +74,31 @@ const getNowPlaying = async (): Promise<string> => {
 const generateTempChart = async (): Promise<Buffer | null> => {
     try {
         const port = process.env.PORT || 8888;
-        const { data } = await axios.get(`http://localhost:${port}/api/weather/history`,{ headers: { 'x-api-key': API_KEY } });
+        const { data } = await axios.get(
+            `http://localhost:${port}/api/weather/history`,
+            { headers: { 'x-api-key': API_KEY } }
+        );
         if (!data || !Array.isArray(data) || data.length === 0) return null;
 
-        const width = 800; 
+        const width = 800;
         const height = 400;
-        const chartJSNodeCanvas = new ChartJSNodeCanvas({ width, height, backgroundColour: '#1a1a1a' });
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
 
-        const configuration: any = {
+        // Plugin rysujący ciemne tło (#1a1a1a) tak jak wcześniej w ChartJSNodeCanvas
+        const backgroundPlugin = {
+            id: 'customCanvasBackgroundColor',
+            beforeDraw: (chart: Chart) => {
+                const { ctx: chartCtx } = chart;
+                chartCtx.save();
+                chartCtx.globalCompositeOperation = 'destination-over';
+                chartCtx.fillStyle = '#1a1a1a';
+                chartCtx.fillRect(0, 0, chart.width, chart.height);
+                chartCtx.restore();
+            },
+        };
+
+        const configuration: ChartConfiguration = {
             type: 'line',
             data: {
                 labels: data.map((d: any) => d.time),
@@ -93,15 +114,34 @@ const generateTempChart = async (): Promise<Buffer | null> => {
                 }]
             },
             options: {
-                plugins: { legend: { labels: { color: 'white', font: { size: 18 } } } },
+                animation: false,
+                responsive: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'white', font: { size: 18 } }
+                    }
+                },
                 scales: {
-                    y: { ticks: { color: '#aaaaaa', font: { size: 14 } }, grid: { color: '#333333' } },
-                    x: { ticks: { color: '#aaaaaa', font: { size: 14 }, maxTicksLimit: 8 }, grid: { display: false } }
+                    y: {
+                        ticks: { color: '#aaaaaa', font: { size: 14 } },
+                        grid: { color: '#333333' }
+                    },
+                    x: {
+                        ticks: { color: '#aaaaaa', font: { size: 14 }, maxTicksLimit: 8 },
+                        grid: { display: false }
+                    }
                 }
-            }
+            },
+            plugins: [backgroundPlugin]
         };
-        return await chartJSNodeCanvas.renderToBuffer(configuration);
+
+        const chart = new Chart(ctx as any, configuration);
+        const buffer = await canvas.encode('png');
+        chart.destroy();
+
+        return buffer;
     } catch (e) {
+        console.error("Błąd generowania wykresu:", e);
         return null;
     }
 };
@@ -151,7 +191,7 @@ export const initTelegramBot = () => {
             parse_mode: 'Markdown',
             ...Markup.inlineKeyboard([
                 [Markup.button.callback('🔥 Grzanie', 'mode_heat'), Markup.button.callback('🍃 Eco', 'mode_eco')],
-                [Markup.button.callback('📉 Wykres 24h', 'cmd_chart')], // <-- TUTAJ PRZYWRÓCIŁEM WYKRES
+                [Markup.button.callback('📉 Wykres 24h', 'cmd_chart')],
                 [Markup.button.callback('🔙 Powrót', 'menu_main')]
             ])
         });
@@ -179,16 +219,17 @@ export const initTelegramBot = () => {
             ])
         });
     });
+
     // --- AKCJE (Wszystkie używają safeAnswer) ---
 
-    bot.action('cmd_playpause', async (ctx) => { 
+    bot.action('cmd_playpause', async (ctx) => {
         safeAnswer(ctx, "⏯️ Play/Pause");
-        await triggerApiAction('playpause'); 
+        await triggerApiAction('playpause');
     });
 
-    bot.action('cmd_next', async (ctx) => { 
+    bot.action('cmd_next', async (ctx) => {
         safeAnswer(ctx, "⏭️ Next");
-        await triggerApiAction('next'); 
+        await triggerApiAction('next');
     });
 
     bot.action(/radio_(.+)/, async (ctx) => {
@@ -210,7 +251,7 @@ export const initTelegramBot = () => {
 
     bot.action('cmd_track', async (ctx) => {
         const txt = await getNowPlaying();
-        ctx.reply(txt); 
+        ctx.reply(txt);
         safeAnswer(ctx);
     });
 
@@ -221,19 +262,19 @@ export const initTelegramBot = () => {
         else ctx.reply("⚠️ Błąd generowania wykresu.");
     });
 
-    bot.action('cmd_stop', async (ctx) => { 
+    bot.action('cmd_stop', async (ctx) => {
         safeAnswer(ctx, "Stop");
-        await triggerApiAction('pause'); 
+        await triggerApiAction('pause');
     });
 
-    bot.action('vol_up', async (ctx) => { 
+    bot.action('vol_up', async (ctx) => {
         safeAnswer(ctx, "Vol +");
-        await triggerApiAction('volume_up'); 
+        await triggerApiAction('volume_up');
     });
-    
-    bot.action('vol_down', async (ctx) => { 
+
+    bot.action('vol_down', async (ctx) => {
         safeAnswer(ctx, "Vol -");
-        await triggerApiAction('volume_down'); 
+        await triggerApiAction('volume_down');
     });
 
     runLoop();
@@ -248,7 +289,7 @@ async function runLoop() {
         if (res.data.ok && res.data.result.length > 0) {
             for (const u of res.data.result) {
                 offset = u.update_id + 1;
-                
+
                 if (u.callback_query) {
                     try {
                         bot.handleUpdate(u);
@@ -262,7 +303,7 @@ async function runLoop() {
                             bot.handleUpdate(u);
                             const text = u.message.text.trim();
                             const author = u.message.from.first_name;
-                            
+
                             if (!text.startsWith('/')) {
                                 if (addNote) {
                                     addNote(text, author);
