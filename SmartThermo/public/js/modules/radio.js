@@ -48,16 +48,16 @@ export function playRadio(url, title) {
     state.lastRadioStartTimestamp = Date.now();
 
     if (player) {
-        // Sprawdź czy URL jest nowy, zanim zresetujesz player
+        // Reset tylko jeśli URL się zmienia
         const targetSrc = new URL(url, document.baseURI).href;
         if (player.src !== targetSrc) {
             player.src = url;
         }
-
         player.volume = 1.0;
         player.play().catch(e => console.warn("Autoplay block:", e));
     }
 
+    // Optymistyczny update
     if (window.updatePlayerUI) {
         window.updatePlayerUI({
             source: 'Radio',
@@ -86,7 +86,6 @@ export function toggleRadioPlay() {
     if (player.paused) {
         // Resume
         state.lastRadioStartTimestamp = Date.now();
-
         if (state.currentStationIndex >= 0 && state.globalStationList[state.currentStationIndex]) {
             const currentStation = state.globalStationList[state.currentStationIndex];
             playRadio(currentStation.streamUrl, currentStation.title);
@@ -95,22 +94,7 @@ export function toggleRadioPlay() {
         // Pause
         player.pause();
         state.isPlaying = false;
-
-        if (window.updatePlayerUI) {
-            // Bezpieczne pobieranie tytułu (dla starszych przeglądarek)
-            var currentTitle = "Radio";
-            var trackEl = document.getElementById('current-track');
-            if (trackEl) currentTitle = trackEl.innerText;
-
-            window.updatePlayerUI({
-                source: 'Radio',
-                status: 'Paused',
-                title: currentTitle,
-                artist: 'Radio Internetowe',
-                cover: 'style-css/img/radio.svg'
-            });
-        }
-
+        // W radio pause działa jak stop dla UI, ale backend pamięta URL
         fetch('/api/media/control', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -118,3 +102,25 @@ export function toggleRadioPlay() {
         });
     }
 }
+
+// 🔥 NOWA FUNKCJA: Całkowite zatrzymanie radia (Czyści URL)
+export function stopRadio() {
+    const player = document.getElementById('radio-audio');
+    if (player) {
+        player.pause();
+        player.src = ""; // Czyścimy źródło
+        state.isRadioPlaying = false;
+        state.isPlaying = false;
+        state.activeSource = 'none';
+    }
+
+    // Wysyłamy specjalną komendę do backendu
+    fetch('/api/media/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop_radio' })
+    });
+}
+
+// Eksportujemy do window, żeby można było użyć w HTML onclick="stopRadio()"
+window.stopRadio = stopRadio;

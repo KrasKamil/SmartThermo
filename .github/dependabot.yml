@@ -1,0 +1,45 @@
+version: 2
+updates:
+  # 1. Automatyczne aktualizacje dla zależności npm (Node.js / TypeScript)
+  - package-ecosystem: "npm"
+    directory: "/SmartThermo"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "typescript"
+          - "tsx"
+          - "rimraf"
+          - "vite"
+          - "vitest"
+
+  # 2. Automatyczne aktualizacje dla zależności Pythona (scripts / media monitor)
+  - package-ecosystem: "pip"
+    directory: "/SmartThermo"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps-py)"
+
+  # 3. Aktualizacje wersji GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci(actions)"

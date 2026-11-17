@@ -1,0 +1,28 @@
+name: Dependabot Auto-Merge
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-automerge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Sprawdź metadane PR Dependabota
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Włącz auto-merge jeśli testy CI przejdą
+        # Pozwalamy na automatyczny merge drobnych aktualizacji (minor/patch) oraz dev-dependencies
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major' || contains(steps.metadata.outputs.dependency-group, 'dev-dependencies')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
