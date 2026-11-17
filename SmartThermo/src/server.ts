@@ -1,5 +1,6 @@
 import app from "./app";
 import dotenv from "dotenv";
+import fs from "fs";
 import http from "http";
 import path from "path";
 import { spawn } from "child_process";
@@ -12,49 +13,73 @@ import { initTelegramBot } from './services/telegramService';
 dotenv.config();
 
 const PORT = process.env.PORT || 8888;
+const IS_DOCKER = !isWindows && fs.existsSync('/.dockerenv');
 
 // 1. WYKRYWANIE TRYBU (DEV vs PROD)
 // Sprawdza czy plik ma rozszerzenie .ts (ts-node) lub czy skrypt to 'dev'
 const isDevMode = __filename.endsWith('.ts') || process.env.npm_lifecycle_event === 'dev';
 
+// Wybór właściwego interpretera Pythona dla danego środowiska
+const getPythonCommand = (): string => {
+    if (isWindows) {
+        const winVenvPython = path.join(__dirname, '../env-media/Scripts/python.exe');
+        return fs.existsSync(winVenvPython) ? winVenvPython : 'python';
+    }
+    // W kontenerze Docker korzystamy z /opt/venv/bin/python, na hoście Linux z python3
+    if (fs.existsSync('/opt/venv/bin/python')) {
+        return '/opt/venv/bin/python';
+    }
+    return 'python3';
+};
+
+// Bezpieczne uruchamianie skryptów Pythona w tle (nie wywala serwera przy braku Pythona/pliku)
+const spawnPythonScript = (label: string, scriptName: string) => {
+    const scriptPath = path.join(__dirname, '../scripts', scriptName);
+
+    if (!fs.existsSync(scriptPath)) {
+        console.warn(`⚠️ [${label}] Pomijam — nie znaleziono pliku: ${scriptPath}`);
+        return;
+    }
+
+    const pythonCmd = getPythonCommand();
+    console.log(`${label} Start procesu tła (${pythonCmd} ${scriptName})...`);
+
+    const pyProcess = spawn(pythonCmd, [scriptPath]);
+
+    pyProcess.on('error', (err) => {
+        console.error(`⚠️ [${label}] Nie udało się uruchomić procesu (${pythonCmd}):`, err.message);
+    });
+
+    pyProcess.stderr.on('data', (data) => {
+        console.error(`[${label} ERR] ${data}`);
+    });
+
+    pyProcess.on('exit', (code) => {
+        if (code !== 0 && code !== null) {
+            console.warn(`⚠️ [${label}] Proces zakończył pracę z kodem: ${code}`);
+        }
+    });
+
+    const kill = () => {
+        if (!pyProcess.killed) pyProcess.kill();
+    };
+    process.on('SIGINT', kill);
+    process.on('SIGTERM', kill);
+    process.on('exit', kill);
+};
+
 // --- A. LOGGER (Python) ---
 const startPythonLogger = () => {
-    const scriptPath = path.join(__dirname, '../scripts/universal_logger.py');
-    const venvPath = path.join(__dirname, '../env-media');
-    
-    let pythonCmd = "python";
-    if (isWindows) pythonCmd = path.join(venvPath, 'Scripts', 'python.exe');
-
-    console.log(`🐍 [LOGGER] Start procesu tła...`);
-    const pyProcess = spawn(pythonCmd, [scriptPath]);
-    
-    // Logowanie błędów loggera
-    pyProcess.stderr.on('data', (data) => console.error(`[LOG ERR] ${data}`));
-    
-    // Zabijanie przy wyjściu
-    const kill = () => !pyProcess.killed && pyProcess.kill();
-    process.on('SIGINT', kill);
-    process.on('exit', kill);
+    spawnPythonScript('🐍 [LOGGER]', 'universal_logger.py');
 };
 
 // --- B. MONITOR MEDIÓW (Python) ---
 const startMediaMonitor = () => {
-    const scriptPath = path.join(__dirname, '../scripts/media_monitor.py');
-    const venvPath = path.join(__dirname, '../env-media');
-    
-    let pythonCmd = "python";
-    if (isWindows) pythonCmd = path.join(venvPath, 'Scripts', 'python.exe');
-
-    console.log(`🎵 [MONITOR] Start procesu tła...`);
-    const pyProcess = spawn(pythonCmd, [scriptPath]);
-
-    // Logowanie błędów monitora
-    pyProcess.stderr.on('data', (data) => console.error(`[MEDIA ERR] ${data}`));
-
-    // Zabijanie przy wyjściu
-    const kill = () => !pyProcess.killed && pyProcess.kill();
-    process.on('SIGINT', kill);
-    process.on('exit', kill);
+    if (IS_DOCKER) {
+        console.log('🐳 [MONITOR] Wykryto kontener Docker — pomijam lokalny monitor mediów pulpitu.');
+        return;
+    }
+    spawnPythonScript('🎵 [MONITOR]', 'media_monitor.py');
 };
 
 // --- START SERWERA ---
@@ -68,7 +93,7 @@ const startServer = async () => {
         initTelegramBot();
 
         if (isDevMode) {
-            //startPythonLogger();
+            // startPythonLogger();
             startMediaMonitor();
             // --- TRYB DEVELOPERSKI ---
             console.log("");
@@ -78,7 +103,6 @@ const startServer = async () => {
             console.log(`   python scripts/media_monitor.py`);
             console.log(`   python scripts/universal_logger.py`);
             console.log("");
-            
         } else {
             // --- TRYB PRODUKCYJNY ---
             console.log("");
@@ -88,15 +112,20 @@ const startServer = async () => {
             startMediaMonitor();
         }
 
+        const systemLabel = isWindows
+            ? 'Windows 🪟'
+            : IS_DOCKER
+                ? 'Docker (Linux) 🐳'
+                : 'Linux/Raspberry Pi 🍓';
+
         httpServer.listen(PORT, () => {
             console.log("===================================================");
             console.log(`🚀 SERWER HTTP: http://localhost:${PORT}`);
-            console.log(`💻 System:      ${isWindows ? 'Windows 🪟' : 'Linux/Raspberry Pi 🍓'}`);
+            console.log(`💻 System:      ${systemLabel}`);
             console.log(`📡 Socket.io:   AKTYWNE`);
             console.log(`🤖 Telegram:    AKTYWNY`);
             console.log("===================================================");
         });
-
     } catch (error) {
         console.error("❌ Krytyczny błąd startu:", error);
     }

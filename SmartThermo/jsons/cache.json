@@ -1,0 +1,13 @@
+[
+    {
+        "city": "Krak\u00f3w",
+        "temp_ins": 20.8,
+        "hum_ins": 51.9,
+        "pressure": 1006.5,
+        "temp_out": 7,
+        "wind": "7 km/h",
+        "due_date": "2026-11-17 21:22:39",
+        "condition": "Rain",
+        "icon": "10n"
+    }
+]
