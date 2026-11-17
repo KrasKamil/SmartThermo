@@ -3,6 +3,7 @@ updates:
   # 1. Automatyczne aktualizacje dla zależności npm (Node.js / TypeScript)
   - package-ecosystem: "npm"
     directory: "/SmartThermo"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -24,6 +25,7 @@ updates:
   # 2. Automatyczne aktualizacje dla zależności Pythona (scripts / media monitor)
   - package-ecosystem: "pip"
     directory: "/SmartThermo"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -36,6 +38,7 @@ updates:
   # 3. Aktualizacje wersji GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "monthly"
     commit-message:
