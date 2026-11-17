@@ -15,7 +15,7 @@ jobs:
         working-directory: SmartThermo
     steps:
       - name: Checkout repozytorium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Konfiguracja Node.js
         uses: actions/setup-node@v4
@@ -36,7 +36,7 @@ jobs:
         working-directory: SmartThermo
     steps:
       - name: Checkout repozytorium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Konfiguracja Node.js
         uses: actions/setup-node@v4
@@ -57,7 +57,7 @@ jobs:
         working-directory: SmartThermo
     steps:
       - name: Checkout repozytorium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Konfiguracja Node.js
         uses: actions/setup-node@v4
@@ -76,7 +76,7 @@ jobs:
     needs: [lint, typecheck-and-build, unit-tests]
     steps:
       - name: Checkout repozytorium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Konfiguracja Docker Buildx
         uses: docker/setup-buildx-action@v3
