@@ -23,13 +23,11 @@ jobs:
       - name: Konfiguracja Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: SmartThermo/package.json
+          node-version: 22
 
       - name: Instalacja zależności i test kompilacji
         run: |
-          npm ci --legacy-peer-deps
+          npm install --legacy-peer-deps
           npm run build
 
       - name: Przygotowanie paczki produkcyjnej (Artifact)
@@ -37,7 +35,7 @@ jobs:
           mkdir release-dist
           cp -r dist release-dist/
           cp -r public release-dist/
-          cp package.json package-lock.json release-dist/
+          cp package.json release-dist/
           tar -czf smartthermo-${{ github.ref_name }}.tar.gz -C release-dist .
 
       - name: Utwórz GitHub Release
