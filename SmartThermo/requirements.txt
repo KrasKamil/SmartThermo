@@ -66,4 +66,4 @@ winrt-runtime
 winrt-Windows.Media.Control
 winrt-Windows.Storage.Streams
 winrt-Windows.Devices.Enumeration
-yarg==0.1.9
+yarg==0.1.10
