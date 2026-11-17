@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Konfiguracja Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Testowe budowanie kontenera (bez wypychania)
         uses: docker/build-push-action@v5
