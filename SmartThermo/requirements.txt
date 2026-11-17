@@ -7,7 +7,7 @@ certifi==2026.1.4
 cffi==2.1.1
 charset-normalizer==3.4.4
 colorama==0.4.6
-comtypes==1.4.15
+comtypes==1.4.15; sys_platform == 'win32'
 decorator==5.2.1
 defusedxml==0.7.1
 dnspython==2.8.0
@@ -40,7 +40,7 @@ platformdirs==4.5.1
 prompt_toolkit==3.0.52
 psutil==7.2.2
 pure_eval==0.2.3
-pycaw==20251023
+pycaw==20251023; sys_platform == 'win32'
 pycparser==3.12
 Pygments==2.19.2
 pymongo==4.16.0
@@ -62,8 +62,10 @@ typing_extensions==4.15.0
 urllib3==2.6.3
 wcwidth==0.3.5
 webencodings==0.5.1
-winrt-runtime
-winrt-Windows.Media.Control
-winrt-Windows.Storage.Streams
-winrt-Windows.Devices.Enumeration
+winrt-runtime; sys_platform == 'win32'
+winrt-Windows.Media.Control; sys_platform == 'win32'
+winrt-Windows.Storage.Streams; sys_platform == 'win32'
+winrt-Windows.Devices.Enumeration; sys_platform == 'win32'
+winrt-windows-foundation; sys_platform == 'win32'
+winrt-windows-foundation-collections; sys_platform == 'win32'
 yarg==0.1.10
