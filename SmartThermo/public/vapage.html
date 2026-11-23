@@ -60,6 +60,62 @@
         </div>
     </div>
 
+    <!-- MODAL DOMOFONU / WIDEODOMOFONU -->
+    <div id="intercom-overlay" style="display: none;">
+        <div class="intercom-modal">
+            <!-- Pasek dzwonienia -->
+            <div id="intercom-ring-banner" class="intercom-ring-banner">
+                🔔 KTOŚ DZWONI DO FURTKI!
+            </div>
+
+            <div class="intercom-header">
+                <h3 class="intercom-title">
+                    <i class="fas fa-video"></i> Wideodomofon & Furtka
+                </h3>
+                <button class="close-btn" onclick="closeIntercomPopup()" style="position: static; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+
+            <!-- Strumień wideo / Canvas monitoringu -->
+            <div class="intercom-video-container">
+                <canvas id="intercom-canvas" width="670" height="376"></canvas>
+                <img id="intercom-live-img" style="display: none;" alt="Strumień na żywo">
+            </div>
+
+            <!-- Pasek postępu otwarcia rygla -->
+            <div class="intercom-progress-wrapper">
+                <div id="intercom-unlock-progress" class="intercom-progress-bar"></div>
+            </div>
+
+            <!-- Status rygla i połączenia -->
+            <div class="intercom-status-row">
+                <span id="intercom-gate-status">🔒 Furtka zablokowana (rygiel czuwa)</span>
+                <span>📡 Połączenie: Bezpieczne (ESP/Local)</span>
+            </div>
+
+            <!-- Przyciski akcji -->
+            <div class="intercom-actions">
+                <button id="intercom-unlock-btn" class="intercom-btn intercom-btn-unlock" onclick="unlockDoorbell()">
+                    <i class="fas fa-lock-open"></i> Otwórz furtkę (5s)
+                </button>
+                <button class="intercom-btn intercom-btn-test" onclick="triggerRingSimulation()" title="Symuluj naciśnięcie dzwonka przez gościa">
+                    <i class="fas fa-bell"></i> Test dzwonka
+                </button>
+                <button class="intercom-btn intercom-btn-close" onclick="closeIntercomPopup()">
+                    <i class="fas fa-times"></i> Zamknij
+                </button>
+            </div>
+
+            <!-- Zwijana konfiguracja adresu kamery -->
+            <details style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                <summary style="cursor: pointer; user-select: none;">⚙️ Adres kamery IP / ESP32-CAM (opcjonalnie)</summary>
+                <div class="intercom-stream-config">
+                    <input type="text" id="intercom-stream-url-input" placeholder="np. http://192.168.1.50:81/stream">
+                    <button onclick="saveStreamUrl()">Zapisz strumień</button>
+                </div>
+            </details>
+        </div>
+    </div>
+
     <div id="settings-overlay" class="hidden popup-centered" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85);">
         <div class="glass-effect popup-bordered" style="padding: 30px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
             <button class="close-btn" onclick="closeSettingsPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
@@ -209,6 +265,10 @@
 
         <button id="voiceBtn" onclick="startVoiceRecognition()" title="Asystent głosowy">
             <i class="fas fa-microphone"></i>
+        </button>
+
+        <button id="intercom-button" onclick="openIntercomPopup()" title="Domofon / Furtka">
+            <i class="fas fa-video"></i>
         </button>
 
 

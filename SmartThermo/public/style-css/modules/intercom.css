@@ -1,0 +1,241 @@
+/* style-css/modules/intercom.css */
+
+/* --- PRZYCISK W PASKU BOCZNYM --- */
+#intercom-button {
+    position: fixed;
+    left: 15px;
+    top: 215px;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    outline: none;
+    color: white;
+    font-size: 20px;
+    background: rgba(14, 165, 233, 0.85); /* Elegancki Cyan/Sky blue */
+}
+
+#intercom-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+    background: rgba(14, 165, 233, 1);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- OVERLAY I KARTA DOMOFONU --- */
+#intercom-overlay {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 7, 18, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 2500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.intercom-modal {
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(14, 165, 233, 0.2);
+    border-radius: 24px;
+    width: 720px;
+    max-width: 95vw;
+    padding: 24px;
+    position: relative;
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Nagłówek */
+.intercom-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+}
+
+.intercom-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #38bdf8;
+    margin: 0;
+}
+
+/* Baner dzwonienia */
+.intercom-ring-banner {
+    display: none;
+    background: linear-gradient(90deg, #ef4444, #f97316);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+}
+
+.pulse-ring {
+    animation: pulseRing 1s infinite alternate;
+}
+
+@keyframes pulseRing {
+    from { transform: scale(1); opacity: 0.9; }
+    to { transform: scale(1.02); opacity: 1; filter: brightness(1.15); }
+}
+
+/* Ekran wideo kamery */
+.intercom-video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #020617;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8);
+}
+
+#intercom-canvas,
+#intercom-live-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Pasek postępu otwarcia rygla */
+.intercom-progress-wrapper {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.intercom-progress-bar {
+    width: 0%;
+    height: 100%;
+    background: #38bdf8;
+    transition: width 0.3s linear, background-color 0.3s;
+}
+
+/* Status furtki */
+.intercom-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    padding: 0 4px;
+}
+
+/* Przyciski akcji */
+.intercom-actions {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+}
+
+.intercom-btn {
+    border: none;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.intercom-btn-unlock {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+}
+
+.intercom-btn-unlock:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.6);
+    filter: brightness(1.1);
+}
+
+.intercom-btn-unlock:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.intercom-btn-test {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.intercom-btn-test:hover {
+    background: rgba(245, 158, 11, 0.3);
+    color: #fef3c7;
+}
+
+.intercom-btn-close {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+
+.intercom-btn-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Konfiguracja URL strumienia (zwijana) */
+.intercom-stream-config {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.intercom-stream-config input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.intercom-stream-config button {
+    background: rgba(56, 189, 248, 0.2);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}

@@ -14,6 +14,7 @@ import airRoutes from './routes/air';
 import dailyRoutes from './routes/daily';
 import notesRoutes from './routes/notes';
 import voiceRoutes from './routes/voice';
+import intercomRoutes from './routes/intercom';
 
 dotenv.config();
 class App {
@@ -87,6 +88,7 @@ class App {
     this.server.use('/api/daily', dailyRoutes);
     this.server.use('/api/notes', notesRoutes);
     this.server.use('/api/voice', voiceRoutes);
+    this.server.use('/api/intercom', intercomRoutes);
     
     // Fallback dla media (zachowanie kompatybilności)
     this.server.use('/api', mediaRoutes); 
