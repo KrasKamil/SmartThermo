@@ -20,8 +20,8 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Włącz auto-merge jeśli testy CI przejdą
-        # Pozwalamy na automatyczny merge drobnych aktualizacji (minor/patch) oraz dev-dependencies
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major' || contains(steps.metadata.outputs.dependency-group, 'dev-dependencies')
+        # Pozwalamy na automatyczny merge WYŁĄCZNIE dla bezpiecznych aktualizacji (minor i patch)
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

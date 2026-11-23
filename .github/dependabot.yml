@@ -9,18 +9,16 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Warsaw"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
-      dev-dependencies:
+      all-npm-dependencies:
         patterns:
-          - "@types/*"
-          - "typescript"
-          - "tsx"
-          - "rimraf"
-          - "vite"
-          - "vitest"
+          - "*"
 
   # 2. Automatyczne aktualizacje dla zależności Pythona (scripts / media monitor)
   - package-ecosystem: "pip"
@@ -31,9 +29,13 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Warsaw"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps-py)"
+    groups:
+      all-python-dependencies:
+        patterns:
+          - "*"
 
   # 3. Aktualizacje wersji GitHub Actions
   - package-ecosystem: "github-actions"
