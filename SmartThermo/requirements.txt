@@ -1,4 +1,4 @@
-asttokens==3.0.1
+asttokens==3.0.2
 attrs==25.4.0
 backcall==0.2.0
 beautifulsoup4==4.14.3
