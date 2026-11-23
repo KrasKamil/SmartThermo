@@ -14,6 +14,7 @@ import airRoutes from './routes/air';
 import dailyRoutes from './routes/daily';
 import notesRoutes from './routes/notes';
 import voiceRoutes from './routes/voice';
+import intercomRoutes from './routes/intercom';
 
 dotenv.config();
 class App {
@@ -87,16 +88,21 @@ class App {
     this.server.use('/api/daily', dailyRoutes);
     this.server.use('/api/notes', notesRoutes);
     this.server.use('/api/voice', voiceRoutes);
+    this.server.use('/api/intercom', intercomRoutes);
     
     // Fallback dla media (zachowanie kompatybilności)
     this.server.use('/api', mediaRoutes); 
 
     //Pozwolenie frontendowi odczytać klucz z .env
-    this.server.get('/config.js', (req, res) => {
-    const apiKey = process.env.API_KEY || 'default_key';
-    res.setHeader('Content-Type', 'application/javascript');
-    res.send(`window.ENV_API_KEY = "${apiKey}";`);
-  });
+    this.server.get('/config.js', (_req, res) => {
+        const apiKey = process.env.API_KEY || 'default_key';
+        const intercomStreamUrl = process.env.INTERCOM_STREAM_URL || '';
+        res.setHeader('Content-Type', 'application/javascript');
+        res.send(
+          `window.ENV_API_KEY = ${JSON.stringify(apiKey)};` +
+          `window.ENV_INTERCOM_STREAM_URL = ${JSON.stringify(intercomStreamUrl)};`
+        );
+    });
  
   }
 }

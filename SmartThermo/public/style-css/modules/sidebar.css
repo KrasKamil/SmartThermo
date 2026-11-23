@@ -6,6 +6,7 @@
 #spotify-button,
 #voiceBtn,
 #radio-button,
+#intercom-button,
 #settings-button {
     position: fixed;
     left: 15px;
@@ -35,6 +36,7 @@
 #spotify-button:hover,
 #voiceBtn:hover,
 #radio-button:hover,
+#intercom-button:hover,
 #settings-button:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
