@@ -9,6 +9,7 @@ import { toggleTheme, openPopup, closePopup, handleVolumeInput, setupEventListen
 import { initAirQuality, loadAirQuality } from './modules/air.js';
 import { initDaily } from './modules/daily.js';
 import { initNotes } from './modules/notes.js';
+import { initIntercom } from './modules/intercom.js';
 import { state } from './modules/state.js';
 
 const API_KEY = window.ENV_API_KEY;
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initAirQuality();
+    initIntercom(socket);
     setupEventListeners();
 
     // Pobierz stan tylko jeśli radio NIE gra

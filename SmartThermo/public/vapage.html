@@ -60,6 +60,84 @@
         </div>
     </div>
 
+    <div id="intercom-overlay" hidden>
+        <section class="intercom-modal" role="dialog" aria-modal="true" aria-labelledby="intercom-heading" tabindex="-1">
+            <header class="intercom-header">
+                <h3 class="intercom-title" id="intercom-heading">
+                    <i class="fas fa-video" aria-hidden="true"></i> Wideodomofon
+                </h3>
+                <button id="intercom-close-btn" class="intercom-icon-btn" type="button" aria-label="Zamknij panel domofonu">×</button>
+            </header>
+
+            <div id="intercom-ring-banner" class="intercom-ring-banner" role="status" aria-live="assertive" hidden>
+                <span class="intercom-ring-dot" aria-hidden="true"></span>
+                <span>Ktoś dzwoni do furtki</span>
+            </div>
+
+            <div class="intercom-layout">
+                <section class="intercom-camera-card" aria-labelledby="intercom-camera-heading">
+                    <div class="intercom-camera-heading">
+                        <div>
+                            <h4 id="intercom-camera-heading">Podgląd z kamery furtki</h4>
+                            <p>Obraz jednokierunkowy · MJPEG</p>
+                        </div>
+                        <i class="fas fa-camera" aria-hidden="true"></i>
+                    </div>
+                    <div class="intercom-video-container" id="intercom-preview">
+                        <img id="intercom-live-img" alt="Jednokierunkowy strumień MJPEG z kamery furtki" hidden>
+                        <div id="intercom-camera-message" class="intercom-camera-message" role="status" aria-live="polite">
+                            <i class="fas fa-video-slash" aria-hidden="true"></i>
+                            <span id="intercom-camera-message-text">Adres kamery furtki nie jest skonfigurowany. Ustaw go w Ustawieniach systemu.</span>
+                        </div>
+                    </div>
+                    <p class="intercom-camera-note">Ta kamera nie obsługuje rozmowy audio. Lokalne kamery telefonu ani laptopa nie są używane.</p>
+                </section>
+
+                <section class="intercom-control-card" aria-label="Sterowanie domofonem">
+                    <div class="intercom-call-state">
+                        <h4 id="intercom-call-title">Domofon gotowy</h4>
+                        <p id="intercom-call-status" role="status" aria-live="polite">Gotowy na połączenie</p>
+                    </div>
+                    <p id="intercom-connection-status" class="intercom-connection-status" role="status" aria-live="polite" data-connected="false">Łączenie z serwerem…</p>
+
+                    <div id="intercom-answer-swipe-wrap" class="intercom-answer-swipe-wrap" hidden>
+                        <label for="intercom-answer-swipe">Przesuń w prawo, aby odebrać</label>
+                        <div id="intercom-answer-swipe" class="intercom-answer-swipe" role="slider" tabindex="0"
+                            aria-label="Przesuń, aby odebrać powiadomienie; klawiatura: strzałki zmieniają postęp, Enter odbiera"
+                            aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <span class="intercom-swipe-thumb" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+                            <span class="intercom-swipe-copy" aria-hidden="true">Przesuń, aby odebrać</span>
+                        </div>
+                    </div>
+
+                    <div class="intercom-actions">
+                        <button id="intercom-answer-btn" class="intercom-btn intercom-btn-answer" type="button" hidden>
+                            <i class="fas fa-phone" aria-hidden="true"></i> Odbierz powiadomienie
+                        </button>
+                        <button id="intercom-dismiss-btn" class="intercom-btn intercom-btn-dismiss" type="button" hidden>
+                            <i class="fas fa-bell-slash" aria-hidden="true"></i> Wycisz / odrzuć
+                        </button>
+                        <button id="intercom-unlock-wicket-btn" class="intercom-btn intercom-btn-unlock" type="button" disabled>
+                            <i class="fas fa-door-open" aria-hidden="true"></i> Otwórz furtkę
+                        </button>
+                        <button id="intercom-unlock-gate-btn" class="intercom-btn intercom-btn-gate" type="button" disabled>
+                            <i class="fas fa-warehouse" aria-hidden="true"></i> Otwórz bramę
+                        </button>
+                        <p id="intercom-wicket-status" class="intercom-device-status">Furtka: brak sterownika</p>
+                        <p id="intercom-gate-status" class="intercom-device-status">Brama: brak sterownika</p>
+                        <p class="intercom-device-unavailable">Sterowanie wymaga dokładnie jednego połączonego sterownika dla każdego celu i potwierdzenia urządzenia.</p>
+                        <p id="intercom-action-feedback" class="intercom-action-feedback" role="status" aria-live="polite"></p>
+                        <button id="intercom-preview-btn" class="intercom-btn intercom-btn-preview" type="button">
+                            <i class="fas fa-eye" aria-hidden="true"></i> Pokaż podgląd
+                        </button>
+                        <button id="intercom-close-footer-btn" class="intercom-btn intercom-btn-close" type="button">Zamknij panel</button>
+                    </div>
+                </section>
+            </div>
+
+        </section>
+    </div>
+
     <div id="settings-overlay" class="hidden popup-centered" style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85);">
         <div class="glass-effect popup-bordered" style="padding: 30px; border-radius: 20px; width: 500px; max-width: 90vw; text-align: center; position: relative;">
             <button class="close-btn" onclick="closeSettingsPopup()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">×</button>
@@ -84,6 +162,38 @@
                 Zmień tryb 🌓
             </button>
             </div>
+
+            <section class="intercom-settings-section" aria-labelledby="intercom-settings-heading">
+                <h3 id="intercom-settings-heading">Domofon i kamera furtki</h3>
+                <p class="intercom-settings-description">
+                    Adres serwerowy z <code>INTERCOM_STREAM_URL</code> jest domyślny.
+                    Zapisany tu adres ma pierwszeństwo tylko w tej przeglądarce.
+                </p>
+                <label for="intercom-stream-url-setting">Adres strumienia MJPEG</label>
+                <div class="intercom-settings-stream">
+                    <input type="url" id="intercom-stream-url-setting" inputmode="url" autocomplete="url"
+                        placeholder="http://adres-kamery:81/stream">
+                    <button id="intercom-save-stream-setting" type="button">Zapisz</button>
+                </div>
+                <button id="intercom-reset-stream-setting" class="intercom-settings-secondary" type="button">
+                    Użyj domyślnego adresu serwera
+                </button>
+                <p id="intercom-stream-setting-status" class="intercom-settings-status" role="status" aria-live="polite"></p>
+
+                <label class="intercom-sound-setting" for="intercom-ring-sound-setting">
+                    <input id="intercom-ring-sound-setting" type="checkbox">
+                    <span>Dźwięk dzwonka podczas aktywnego wywołania</span>
+                </label>
+                <button id="intercom-test-sound-setting" class="intercom-settings-secondary" type="button">
+                    Odtwórz testowy dźwięk
+                </button>
+                <p class="intercom-settings-description">
+                    Własna, trzytonowa sekwencja różni się od dźwięków powiadomień Telegrama.
+                    Powtarza się do odebrania, wyciszenia lub timeoutu. Przeglądarka może
+                    wymagać wcześniejszego kliknięcia „Odtwórz testowy dźwięk”.
+                </p>
+                <p id="intercom-sound-setting-status" class="intercom-settings-status" role="status" aria-live="polite"></p>
+            </section>
 
             <div style="border-top: 1px solid #444; padding-top: 15px; text-align: left;">
                 <h3 style="color: #00d2ff; margin-bottom: 10px;">Bluetooth Audio 🔊</h3>
@@ -209,6 +319,10 @@
 
         <button id="voiceBtn" onclick="startVoiceRecognition()" title="Asystent głosowy">
             <i class="fas fa-microphone"></i>
+        </button>
+
+        <button id="intercom-button" title="Domofon / Furtka" aria-label="Otwórz panel domofonu">
+            <i class="fas fa-video"></i>
         </button>
 
 

@@ -1,0 +1,528 @@
+#intercom-button {
+    position: fixed;
+    z-index: 100;
+    top: 215px;
+    left: 15px;
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 15px;
+    color: #fff;
+    background: #087da5;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 160ms ease, background-color 160ms ease;
+}
+
+#intercom-button:hover { background: #0796bd; }
+#intercom-button:active { transform: scale(0.96); }
+
+#intercom-overlay[hidden] { display: none; }
+
+#intercom-overlay {
+    position: fixed;
+    z-index: 2500;
+    inset: 0;
+    display: grid;
+    overflow: auto;
+    place-items: center;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: rgba(3, 10, 22, 0.82);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    overscroll-behavior: contain;
+}
+
+body.intercom-open { overflow: hidden; }
+
+.intercom-modal {
+    box-sizing: border-box;
+    display: flex;
+    width: min(100%, 1000px);
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+    flex-direction: column;
+    gap: 18px;
+    overflow: auto;
+    padding: clamp(16px, 3vw, 28px);
+    border: 1px solid rgba(148, 212, 235, 0.24);
+    border-radius: 24px;
+    color: #eef7fc;
+    background: linear-gradient(145deg, #10243a 0%, #091523 72%);
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+.intercom-header {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.intercom-title {
+    margin: 0;
+    color: #d7effb;
+    font-size: clamp(1.05rem, 3vw, 1.4rem);
+    font-weight: 720;
+    letter-spacing: 0.01em;
+}
+
+.intercom-title i { margin-right: 8px; color: #47c4e7; }
+
+.intercom-icon-btn {
+    display: grid;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    color: #e8f3fa;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.intercom-ring-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 117, 117, 0.42);
+    border-radius: 15px;
+    color: #ffe4e4;
+    background: rgba(116, 35, 44, 0.28);
+    font-weight: 750;
+}
+
+.intercom-ring-banner[hidden],
+.intercom-answer-swipe-wrap[hidden],
+.intercom-dismiss-btn[hidden],
+#intercom-answer-btn[hidden],
+#intercom-dismiss-btn[hidden],
+.intercom-camera-message[hidden] { display: none; }
+
+.intercom-ring-dot {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 10px;
+    border-radius: 50%;
+    background: #ff626b;
+    box-shadow: 0 0 0 5px rgba(255, 98, 107, 0.15);
+}
+
+.intercom-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(270px, 0.85fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.intercom-camera-card,
+.intercom-control-card {
+    min-width: 0;
+    border: 1px solid rgba(161, 197, 221, 0.14);
+    border-radius: 19px;
+    background: rgba(4, 14, 26, 0.55);
+}
+
+.intercom-camera-card { padding: 14px; }
+
+.intercom-camera-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.intercom-camera-heading h4 {
+    margin: 0;
+    color: #ecf7fb;
+    font-size: 0.98rem;
+}
+
+.intercom-camera-heading p {
+    margin: 4px 0 0;
+    color: #9eb4c6;
+    font-size: 0.78rem;
+}
+
+.intercom-video-container {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-height: 180px;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    place-items: center;
+    border: 1px solid rgba(173, 206, 225, 0.13);
+    border-radius: 14px;
+    background: #030a12;
+}
+
+#intercom-live-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #02070c;
+}
+
+#intercom-live-img[hidden] { display: none; }
+
+.intercom-camera-message {
+    display: grid;
+    max-width: 380px;
+    min-height: 120px;
+    align-content: center;
+    justify-items: center;
+    gap: 10px;
+    padding: 18px;
+    color: #b7c8d6;
+    text-align: center;
+    line-height: 1.5;
+}
+
+.intercom-camera-message i { color: #61b9d6; font-size: 1.8rem; }
+.intercom-camera-message.is-error i { color: #f0a2a2; }
+
+.intercom-camera-note {
+    margin: 10px 2px 0;
+    color: #8ea6b9;
+    font-size: 0.75rem;
+    line-height: 1.45;
+}
+
+.intercom-control-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: clamp(15px, 2.5vw, 21px);
+}
+
+.intercom-call-state {
+    display: grid;
+    gap: 5px;
+    min-height: 76px;
+    align-content: center;
+}
+
+.intercom-call-state h4 {
+    margin: 0;
+    color: #f4fbff;
+    font-size: clamp(1.2rem, 4vw, 1.65rem);
+}
+
+.intercom-call-state p,
+.intercom-connection-status {
+    margin: 0;
+    color: #adc0d0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.intercom-connection-status[data-connected="true"] { color: #8ad5b0; }
+.intercom-connection-status[data-connected="false"] { color: #f2b0a7; }
+
+.intercom-answer-swipe-wrap {
+    display: grid;
+    gap: 8px;
+    color: #d0e3ed;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.intercom-answer-swipe {
+    --swipe-progress: 0%;
+    position: relative;
+    display: flex;
+    min-height: 60px;
+    align-items: center;
+    overflow: hidden;
+    padding: 5px;
+    border: 1px solid rgba(107, 208, 164, 0.36);
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(33, 114, 81, 0.68) var(--swipe-progress), rgba(20, 38, 53, 0.95) var(--swipe-progress));
+    touch-action: pan-y;
+    user-select: none;
+    cursor: grab;
+}
+
+.intercom-answer-swipe:active { cursor: grabbing; }
+
+.intercom-swipe-thumb {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 1;
+    display: grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    place-items: center;
+    border: 1px solid #b8f4d4;
+    border-radius: 50%;
+    color: #fff;
+    background: #168a5c;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.34);
+    pointer-events: none;
+    transform: translateX(var(--swipe-position, 0px));
+}
+
+.intercom-swipe-copy {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #e3f0f3;
+    font-size: 0.88rem;
+    pointer-events: none;
+}
+
+.intercom-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+}
+
+.intercom-btn {
+    display: flex;
+    min-width: 0;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 11px 12px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: #f2f8fb;
+    font: inherit;
+    font-size: 0.89rem;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 140ms ease, filter 140ms ease, background-color 140ms ease;
+    touch-action: manipulation;
+}
+
+.intercom-btn:active:not(:disabled) { transform: scale(0.98); }
+.intercom-btn:focus-visible,
+.intercom-icon-btn:focus-visible,
+.intercom-stream-config input:focus-visible,
+.intercom-stream-config button:focus-visible,
+.intercom-answer-swipe:focus-visible,
+#intercom-button:focus-visible {
+    outline: 3px solid #80dcfb;
+    outline-offset: 3px;
+}
+
+.intercom-btn:disabled { opacity: 0.48; cursor: not-allowed; filter: saturate(0.55); }
+
+.intercom-btn-answer {
+    grid-column: 1 / -1;
+    min-height: 58px;
+    color: #042419;
+    background: #85e2b2;
+}
+
+.intercom-btn-dismiss {
+    grid-column: 1 / -1;
+    color: #ffe7e4;
+    background: rgba(156, 63, 63, 0.24);
+    border-color: rgba(255, 145, 145, 0.24);
+}
+
+.intercom-btn-unlock {
+    min-height: 56px;
+    color: #dcf8e9;
+    background: rgba(30, 111, 77, 0.3);
+    border-color: rgba(96, 201, 143, 0.33);
+}
+
+.intercom-btn-gate {
+    color: #fff0d3;
+    background: rgba(135, 95, 29, 0.28);
+    border-color: rgba(239, 183, 85, 0.34);
+}
+
+.intercom-btn-preview,
+.intercom-btn-close {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.13);
+}
+
+.intercom-device-status {
+    grid-column: span 1;
+    margin: -4px 0 0;
+    color: #9db4c4;
+    font-size: 0.76rem;
+    text-align: center;
+}
+
+.intercom-device-unavailable,
+.intercom-action-feedback {
+    margin: 0;
+    color: #a9bdcc;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.intercom-action-feedback { min-height: 1.2em; color: #d7e8f1; }
+
+
+
+#settings-overlay .popup-bordered {
+    box-sizing: border-box;
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.intercom-settings-section {
+    display: grid;
+    gap: 10px;
+    margin: 14px 0;
+    padding: 16px;
+    border: 1px solid rgba(91, 190, 218, 0.28);
+    border-radius: 16px;
+    background: rgba(16, 40, 58, 0.38);
+    text-align: left;
+}
+
+.intercom-settings-section h3 {
+    margin: 0;
+    color: #6ed2ee;
+    font-size: 1.05rem;
+}
+
+.intercom-settings-section > label:not(.intercom-sound-setting) {
+    color: #d3e2ec;
+    font-size: 0.83rem;
+    font-weight: 650;
+}
+
+.intercom-settings-description,
+.intercom-settings-status {
+    margin: 0;
+    color: #a9bdcc;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.intercom-settings-description code {
+    color: #b5e9f4;
+    overflow-wrap: anywhere;
+}
+
+.intercom-settings-stream {
+    display: flex;
+    gap: 8px;
+}
+
+.intercom-settings-stream input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 9px 11px;
+    border: 1px solid rgba(173, 206, 225, 0.28);
+    border-radius: 11px;
+    color: #edf7fb;
+    background: rgba(0, 0, 0, 0.2);
+    font: inherit;
+    font-size: 0.82rem;
+}
+
+.intercom-settings-stream button,
+.intercom-settings-secondary {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid rgba(91, 190, 218, 0.34);
+    border-radius: 11px;
+    color: #d7f4fb;
+    background: rgba(28, 121, 151, 0.25);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.intercom-settings-secondary {
+    justify-self: start;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(173, 206, 225, 0.2);
+}
+
+.intercom-sound-setting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    color: #e5f1f7;
+    font-size: 0.86rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.intercom-sound-setting input {
+    width: 20px;
+    height: 20px;
+    accent-color: #139cc0;
+}
+
+#settings-overlay .intercom-settings-section button:focus-visible,
+#settings-overlay .intercom-settings-section input:focus-visible {
+    outline: 3px solid #80dcfb;
+    outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+    #intercom-overlay {
+        display: block;
+        padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+            max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    }
+
+    .intercom-modal {
+        width: 100%;
+        max-height: none;
+        min-height: 100%;
+        gap: 13px;
+        margin: 0 auto;
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .intercom-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .intercom-video-container { min-height: 0; aspect-ratio: 16 / 10; }
+    .intercom-control-card { gap: 12px; }
+}
+
+@media (max-width: 390px) {
+    .intercom-camera-card { padding: 10px; }
+    .intercom-control-card { padding: 13px; }
+    .intercom-actions { gap: 7px; }
+    .intercom-btn { padding: 10px 8px; font-size: 0.82rem; }
+    .intercom-settings-stream { flex-direction: column; }
+    .intercom-settings-stream button { width: 100%; }
+}
+
+@media (orientation: landscape) and (max-width: 900px) {
+    .intercom-layout { grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr); }
+    .intercom-video-container { min-height: 0; max-height: 48dvh; aspect-ratio: 16 / 10; }
+    .intercom-modal { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #intercom-button,
+    .intercom-btn { transition: none; }
+    #intercom-overlay { scroll-behavior: auto; }
+}

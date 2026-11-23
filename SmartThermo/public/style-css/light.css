@@ -1082,3 +1082,147 @@ body.light-mode {
     color: #0056b3 !important;
     /* Jeszcze ciemniejszy po najechaniu */
 }
+
+body.light-mode #intercom-button {
+    color: #fff;
+    background: #9c3d79;
+    border-color: rgba(99, 40, 84, 0.22);
+}
+
+body.light-mode #intercom-overlay {
+    background: rgba(28, 38, 53, 0.48);
+}
+
+body.light-mode #intercom-overlay .intercom-modal {
+    color: #263445;
+    background: linear-gradient(145deg, #fff 0%, #f1f5f8 100%);
+    border-color: rgba(72, 115, 145, 0.25);
+    box-shadow: 0 24px 70px rgba(32, 54, 74, 0.28);
+}
+
+body.light-mode #intercom-overlay .intercom-title,
+body.light-mode #intercom-overlay .intercom-camera-heading h4,
+body.light-mode #intercom-overlay .intercom-call-state h4 {
+    color: #243b52;
+}
+
+body.light-mode #intercom-overlay .intercom-camera-card,
+body.light-mode #intercom-overlay .intercom-control-card {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(80, 119, 147, 0.2);
+}
+
+body.light-mode #intercom-overlay .intercom-camera-heading p,
+body.light-mode #intercom-overlay .intercom-camera-note,
+body.light-mode #intercom-overlay .intercom-call-state p,
+body.light-mode #intercom-overlay .intercom-device-status,
+body.light-mode #intercom-overlay .intercom-device-unavailable,
+body.light-mode #intercom-overlay .intercom-action-feedback {
+    color: #526579;
+}
+
+body.light-mode #intercom-overlay .intercom-camera-message {
+    color: #45596d;
+}
+
+body.light-mode #intercom-overlay .intercom-connection-status[data-connected="true"] {
+    color: #176b47;
+}
+
+body.light-mode #intercom-overlay .intercom-connection-status[data-connected="false"] {
+    color: #a13636;
+}
+
+body.light-mode #intercom-overlay .intercom-ring-banner {
+    color: #782f38;
+    background: #fff0ef;
+    border-color: #e9b5b4;
+}
+
+body.light-mode #intercom-overlay .intercom-answer-swipe {
+    background: linear-gradient(90deg, #a9e3c2 var(--swipe-progress), #edf2f5 var(--swipe-progress));
+}
+
+body.light-mode #intercom-overlay .intercom-swipe-copy {
+    color: #355449;
+}
+
+body.light-mode #intercom-overlay .intercom-btn {
+    color: #31465b;
+    background: #f5f7f9;
+    border-color: #d4dde5;
+}
+
+body.light-mode #intercom-overlay .intercom-btn-answer {
+    color: #124a32;
+    background: #a9e8c7;
+    border-color: #75c99d;
+}
+
+body.light-mode #intercom-overlay .intercom-btn-dismiss {
+    color: #842d34;
+    background: #fff0ef;
+    border-color: #e7b6b6;
+}
+
+body.light-mode #intercom-overlay .intercom-btn-unlock {
+    color: #205a3c;
+    background: #e6f5eb;
+    border-color: #afd8bd;
+}
+
+body.light-mode #intercom-overlay .intercom-btn-gate {
+    color: #68460b;
+    background: #fff4dc;
+    border-color: #ebd19a;
+}
+
+body.light-mode #intercom-overlay .intercom-btn-preview,
+body.light-mode #intercom-overlay .intercom-btn-close {
+    color: #334d63;
+    background: #edf3f7;
+    border-color: #cbd9e2;
+}
+
+body.light-mode #intercom-overlay .intercom-btn:disabled {
+    color: #758596;
+    background: #edf0f2;
+}
+
+body.light-mode #intercom-overlay .intercom-icon-btn {
+    color: #3d5267;
+    background: #f2f5f7;
+    border-color: #d5dfe6;
+}
+
+
+
+body.light-mode #settings-overlay .intercom-settings-section {
+    background: rgba(250, 253, 255, 0.9);
+    border-color: rgba(100, 138, 165, 0.28);
+}
+
+body.light-mode #settings-overlay .intercom-settings-section h3 {
+    color: #a02b70;
+}
+
+body.light-mode #settings-overlay .intercom-settings-section p,
+body.light-mode #settings-overlay .intercom-settings-section label {
+    color: #46596c;
+}
+
+body.light-mode #settings-overlay .intercom-settings-section code {
+    color: #653d82;
+}
+
+body.light-mode #settings-overlay .intercom-settings-section input[type="url"] {
+    color: #25384a;
+    background: #fff;
+    border-color: #b8c8d4;
+}
+
+body.light-mode #settings-overlay .intercom-settings-section button {
+    color: #45305d;
+    background: #f6eff9;
+    border-color: #d7c5e1;
+}
