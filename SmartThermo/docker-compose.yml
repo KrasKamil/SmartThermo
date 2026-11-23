@@ -6,13 +6,14 @@ services:
     container_name: smartthermo_app
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-8889}:${PORT:-8889}"
     environment:
       - NODE_ENV=production
-      - PORT=3000
       - MONGO_URI=mongodb://mongo:27017/smartthermo
     env_file:
       - .env
+    volumes:
+      - ./jsons:/app/jsons
     depends_on:
       mongo:
         condition: service_healthy

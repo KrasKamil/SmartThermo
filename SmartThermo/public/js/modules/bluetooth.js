@@ -1,7 +1,5 @@
 // js/modules/bluetooth.js
 
-// js/modules/bluetooth.js
-
 // Funkcja skanowania (generuje listę i dodaje nasłuchiwanie)
 export async function scanBluetooth() {
     const list = document.getElementById('bt-device-list');

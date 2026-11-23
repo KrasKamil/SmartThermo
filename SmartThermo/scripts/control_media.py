@@ -1,3 +1,4 @@
+# scripts/control_media.py
 import asyncio
 import sys
 
